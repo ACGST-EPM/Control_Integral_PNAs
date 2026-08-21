@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de KMZ — Control Integral PNAs · EPM</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{ --epm-verde:#009300; --epm-lima:#b7c200; --epm-naranja:#d56b00; }
+  body{ background:#f8f9fa; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+  .epm-header{ background:#fff; border-bottom:4px solid var(--epm-verde); box-shadow:0 2px 8px rgba(0,0,0,.1); padding:10px 20px; }
+  .epm-title{ color:var(--epm-verde); font-weight:bold; font-size:19px; margin-left:12px; vertical-align:middle; }
+  .card-head{ background:var(--epm-verde); color:#fff; font-weight:bold; padding:8px 14px; font-size:.95rem; border-radius:6px 6px 0 0; display:flex; justify-content:space-between; align-items:center;}
+  .card-box{ background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,.08); margin-bottom:16px; overflow:hidden; }
+  .card-body2{ padding:14px 16px; }
+  .epm-btn{ background:var(--epm-lima); color:#000; font-weight:bold; border:none; }
+  .epm-btn:hover{ background:#99a800; }
+  .epm-btn-green{ background:var(--epm-verde); color:#fff; font-weight:bold; border:none;}
+  .epm-btn-green:hover{ background:#007a00; color:#fff;}
+  .epm-btn-orange{ background:var(--epm-naranja); color:#fff; font-weight:bold; border:none;}
+  #map{ height:380px; border:3px solid var(--epm-verde); border-radius:8px; }
+  .badge-ok{ background:var(--epm-verde);} .badge-warn{ background:var(--epm-naranja);} .badge-bad{ background:#dc3545;}
+  table td, table th{ font-size:.82rem; vertical-align:middle;}
+  .req-label{ font-weight:600; font-size:.8rem; color:#333;}
+  .mini{ font-size:.72rem; color:#6c757d;}
+  .step-num{ display:inline-block; width:24px; height:24px; line-height:24px; text-align:center; border-radius:50%; background:var(--epm-verde); color:#fff; font-weight:bold; font-size:.8rem; margin-right:6px;}
+  .auto-field{ background:#eef7ee !important; }
+  .drawing-hint{ position:absolute; z-index:500; top:8px; left:50px; background:rgba(0,0,0,.7); color:#fff; padding:4px 10px; border-radius:6px; font-size:.78rem; display:none;}
+  .pna-info{ background:#eef7ee; border:1px solid #cfe8cf; border-radius:6px; padding:8px 10px; font-size:.76rem; color:#245c24; }
+  .hist-box{ background:#fbfbf5; border:1px dashed var(--epm-lima); border-radius:6px; padding:10px; }
+</style>
+</head>
+<body>
+<div class="epm-header d-flex align-items-center">
+  <span style="font-size:26px">🗂️</span>
+  <span class="epm-title">GENERADOR DE KMZ — CONTROL INTEGRAL PNAs</span>
+  <span class="ms-auto mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
+</div>
+
+<div class="container-fluid p-3">
+  <div class="alert alert-light border mb-3" style="border-left:5px solid var(--epm-lima)!important">
+    <b>¿Qué hace esta herramienta?</b> Captura de forma estandarizada los permisos (PNAs) y su <b>historial de gestión</b>,
+    los ubica en el mapa (punto, línea o polígono) y descarga un <b>.kmz</b> listo para el análisis.
+    Al elegir el tipo de permiso, la herramienta completa sola la <b>autoridad</b>, el <b>plazo</b> y los <b>estados de trámite</b>.
+  </div>
+
+  <div class="row">
+    <!-- ================= COLUMNA IZQUIERDA ================= -->
+    <div class="col-lg-7">
+
+      <!-- PASO 1: BASE DE PROYECTOS -->
+      <div class="card-box">
+        <div class="card-head"><span><span class="step-num">1</span>Base de proyectos (la administra el gestor con clave)</span>
+          <div>
+            <button id="btnLock" class="btn btn-sm btn-warning fw-bold" onclick="toggleLock()">🔒 Desbloquear edición</button>
+            <button id="btnImportDB" class="btn btn-sm btn-light" onclick="importarDB()" disabled>📥 Importar JSON</button>
+            <button class="btn btn-sm btn-light" onclick="exportarDB()">💾 Exportar JSON</button>
+          </div>
+        </div>
+        <div class="card-body2">
+          <p class="mini mb-2">Aquí se registran una sola vez los datos de identidad del proyecto. El <b>ID lo asigna el sistema</b> automáticamente.
+          Al crear un permiso se elige el proyecto de un menú y estos datos se copian solos (no se re-escriben).
+          <b>🔒 La edición está protegida con clave de administrador.</b> Guarda el JSON exportado como <code>proyectos_db.json</code> en el repositorio para conservarlo.</p>
+          <div class="table-responsive" style="max-height:220px; overflow:auto">
+            <table class="table table-sm table-striped mb-2">
+              <thead class="table-dark"><tr><th>ID</th><th>Código Banco</th><th>Proyecto</th><th>Estado</th><th>Fase</th><th>Municipio</th><th>Contrato</th><th></th></tr></thead>
+              <tbody id="dbBody"></tbody>
+            </table>
+          </div>
+          <div class="row g-1">
+            <div class="col-2"><input id="nCodBanco" class="form-control form-control-sm" placeholder="Código Banco"></div>
+            <div class="col-2"><input id="nProy" class="form-control form-control-sm" placeholder="Proyecto"></div>
+            <div class="col-2"><select id="nEstado" class="form-select form-select-sm"></select></div>
+            <div class="col-2"><select id="nFase" class="form-select form-select-sm"></select></div>
+            <div class="col-2"><select id="nMun" class="form-select form-select-sm"></select></div>
+            <div class="col-2"><input id="nContrato" class="form-control form-control-sm" placeholder="Contrato"></div>
+            <div class="col-12 mt-1 text-end"><button id="btnAddDB" class="btn btn-sm epm-btn-green" onclick="addDB()" disabled>+ Agregar proyecto</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: GEOMETRIA -->
+      <div class="card-box">
+        <div class="card-head"><span><span class="step-num">2</span>Geometría del permiso (punto, línea o polígono)</span></div>
+        <div class="card-body2">
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <label class="btn btn-sm epm-btn mb-0">📂 Importar KMZ/KML de Google Earth
+              <input type="file" accept=".kmz,.kml" onchange="importarGeom(this.files[0])" hidden></label>
+            <button class="btn btn-sm epm-btn-green" onclick="modoDibujo('linea')">✏️ Dibujar línea</button>
+            <button class="btn btn-sm epm-btn-green" onclick="modoDibujo('poligono')">⬠ Dibujar polígono</button>
+            <button class="btn btn-sm epm-btn-green" onclick="modoDibujo('punto')">📍 Colocar punto</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="cancelarDibujo()">✖ Cancelar dibujo</button>
+          </div>
+          <div style="position:relative">
+            <div id="hint" class="drawing-hint"></div>
+            <div id="map"></div>
+          </div>
+          <p class="mini mt-2">Al <b>dibujar</b>: un clic por vértice; <b>doble-clic para terminar</b> (línea ≥2 puntos, polígono ≥3 puntos). El punto se coloca con un solo clic.
+          Al <b>importar</b>, se leen la geometría y (si vienen) los datos existentes.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= COLUMNA DERECHA ================= -->
+    <div class="col-lg-5">
+      <!-- PASO 3: FORMULARIO VALIDADO -->
+      <div class="card-box">
+        <div class="card-head"><span><span class="step-num">3</span>Datos del permiso (menús validados)</span></div>
+        <div class="card-body2">
+          <div class="mb-2">
+            <label class="req-label">Nombre del permiso/trazado *</label>
+            <div class="input-group input-group-sm">
+              <input id="fNombre" class="form-control form-control-sm" placeholder="Ej: 0001_PUZV_01">
+              <button class="btn epm-btn" onclick="sugerirNombre()" title="Sugerir nombre">↻</button>
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="req-label">Proyecto (de la base) *</label>
+            <select id="fProyecto" class="form-select form-select-sm" onchange="autoLlenarProyecto()"></select>
+          </div>
+          <div class="row g-1 mb-2">
+            <div class="col-4"><label class="req-label">ID</label><input id="fID" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col-8"><label class="req-label">Código Banco</label><input id="fCodBanco" class="form-control form-control-sm auto-field" readonly></div>
+          </div>
+          <div class="row g-1 mb-2">
+            <div class="col"><label class="req-label">Estado</label><input id="fEstado" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col"><label class="req-label">Fase</label><input id="fFase" class="form-control form-control-sm auto-field" readonly></div>
+          </div>
+          <div class="row g-1 mb-2">
+            <div class="col"><label class="req-label">Municipio</label><input id="fMunicipio" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col"><label class="req-label">Contrato</label><input id="fContrato" class="form-control form-control-sm auto-field" readonly></div>
+          </div>
+          <hr class="my-2">
+          <div class="mb-2">
+            <label class="req-label">Tipo de permiso (PNA) *</label>
+            <select id="fPNA" class="form-select form-select-sm" onchange="autoLlenarPNA()"></select>
+          </div>
+          <div id="pnaInfo" class="pna-info mb-2" style="display:none"></div>
+          <div class="mb-2" id="boxConcesion" style="display:none">
+            <label class="req-label">Concesión * <span class="mini">(solo permisos ANI)</span></label>
+            <input id="fConcesion" class="form-control form-control-sm" placeholder="Concesión vial que administra el segmento">
+          </div>
+
+          <!-- HISTORIAL DE GESTION -->
+          <div class="hist-box mb-2">
+            <label class="req-label d-block mb-1">🗒️ Historial de gestión del trámite</label>
+            <p class="mini mb-2">Agrega una fila cada vez que el trámite avanza (se va acumulando todo el proceso).</p>
+            <div class="table-responsive" style="max-height:170px; overflow:auto">
+              <table class="table table-sm mb-2">
+                <thead class="table-secondary"><tr><th>#</th><th>Estado</th><th>Radicado</th><th>F. radic.</th><th>F. resp.</th><th>Obs.</th><th></th></tr></thead>
+                <tbody id="histBody"><tr><td colspan="7" class="text-center mini py-2">Sin filas de historial.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="row g-1">
+              <div class="col-12"><select id="hEstado" class="form-select form-select-sm" onchange="ajustarRadicado()"><option value="">— Estado de trámite —</option></select></div>
+              <div class="col-6"><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
+              <div class="col-6"><input id="hObs" class="form-control form-control-sm" placeholder="Observación"></div>
+              <div class="col-6"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
+              <div class="col-6"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
+              <div class="col-12 text-end mt-1"><button class="btn btn-sm epm-btn" onclick="addHist()">+ Agregar al historial</button></div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm epm-btn-green flex-grow-1" onclick="guardarTrazado()">💾 Guardar / Actualizar permiso</button>
+            <button class="btn btn-sm epm-btn" onclick="limpiarForm()">Nuevo</button>
+          </div>
+          <div id="editHint" class="mini mt-1 text-danger"></div>
+        </div>
+      </div>
+
+      <!-- PASO 5: EXPORTAR -->
+      <div class="card-box">
+        <div class="card-head"><span><span class="step-num">5</span>Validar y exportar</span></div>
+        <div class="card-body2">
+          <div id="validBox" class="mini mb-2">Aún no hay permisos cargados.</div>
+          <button class="btn epm-btn-green w-100 fw-bold" onclick="exportarKMZ()">⬇️ Generar y descargar KMZ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASO 4: LISTA DE TRAZADOS -->
+  <div class="card-box">
+    <div class="card-head"><span><span class="step-num">4</span>Permisos en este KMZ</span>
+      <span class="mini text-white">Total: <span id="cnt">0</span></span></div>
+    <div class="card-body2">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead class="table-dark"><tr>
+            <th>#</th><th>Nombre</th><th>Geom.</th><th>Proyecto</th><th>PNA</th><th>Autoridad</th><th>Hist.</th><th>Estado actual</th><th>Válido</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="listaBody"><tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   GENERADOR DE KMZ — CONTROL INTEGRAL PNAs · EPM
+   Autocontenido. Depende de Leaflet (mapa) y JSZip (empaquetado).
+   Lee el catálogo tipos_permiso.json (si está publicado al lado)
+   y, si no, usa la copia embebida CATALOGO_SEED.
+   ============================================================ */
+
+/* ---------- Catálogo embebido (respaldo si no hay tipos_permiso.json) ---------- */
+const CATALOGO_SEED = {
+  listas_comunes: {
+    estado_proyecto: ["Identificación","Formulación","Ejecución","Terminación","Evaluación"],
+    fase_proyecto: ["Iniciativa","Idea","Prefactibilidad","Factibilidad","Planeación Ejecución","Diseño","Desarrollo","Puesta en Servicio","Cierre","Operación","Desmantelación"],
+    municipios: ["Barbosa","Girardota","Copacabana","Bello","Medellín","Itagüí","Envigado","Sabaneta","Caldas","La Estrella"],
+    geometrias_permitidas: ["punto","linea","poligono"]
+  },
+  permisos: [
+    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado","Negado","Aprobado"], color:"#009300"},
+    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#0066CC"},
+    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#d56b00"},
+    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#8e44ad"},
+    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#e6a800"}
+  ]
+};
+
+/* ---------- Estado global ---------- */
+let CAT = CATALOGO_SEED;         // catálogo activo
+let DB = [];                     // base de proyectos: {id, codigo_banco, proyecto, estado, fase, municipio, contrato}
+let trazados = [];               // permisos cargados en este KMZ
+let historialActual = [];        // historial del permiso que se está editando
+let editandoId = null;
+let idSeq = 1;                   // consecutivo para nombres de trazado
+let idProySeq = 1;              // consecutivo para ID de proyectos
+
+/* ---------- Control de acceso (clave admin) ---------- */
+let dbUnlocked = false;
+// SHA-256 de la clave. Clave por defecto: EPM-PNA-2026
+const CLAVE_HASH = "c5752bb60b6c76aa4f14c1e3baa52f68f75ee1689d8cf517ec26bafd3093bf1b";
+async function sha256(txt){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function toggleLock(){
+  if(dbUnlocked){ dbUnlocked=false; aplicarLock(); return; }
+  const k = prompt('Clave de administrador para editar la base de proyectos:');
+  if(k===null) return;
+  try{
+    const h = await sha256(k);
+    if(h===CLAVE_HASH){ dbUnlocked=true; aplicarLock(); }
+    else alert('Clave incorrecta.');
+  }catch(e){ alert('Este navegador no permite validar la clave (requiere HTTPS/GitHub Pages).'); }
+}
+function aplicarLock(){
+  const btn=document.getElementById('btnLock');
+  btn.textContent = dbUnlocked? '🔓 Bloquear edición' : '🔒 Desbloquear edición';
+  btn.className   = 'btn btn-sm fw-bold '+(dbUnlocked?'btn-success':'btn-warning');
+  ['btnImportDB','btnAddDB','nCodBanco','nProy','nEstado','nFase','nMun','nContrato'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!dbUnlocked; });
+  renderDB();
+}
+
+/* ---------- Persistencia (localStorage) ---------- */
+function guardarLocal(){ try{ localStorage.setItem('pna_db', JSON.stringify(DB)); localStorage.setItem('pna_idProy', String(idProySeq)); }catch(e){} }
+function cargarLocal(){
+  try{
+    const d = localStorage.getItem('pna_db'); if(d) DB = JSON.parse(d);
+    const s = localStorage.getItem('pna_idProy'); if(s) idProySeq = parseInt(s)||1;
+  }catch(e){}
+}
+
+/* ---------- Arranque ---------- */
+async function init(){
+  // Intenta cargar el catálogo publicado; si no, usa el embebido
+  try{
+    const r = await fetch('tipos_permiso.json',{cache:'no-store'});
+    if(r.ok){ const j = await r.json(); if(j && j.permisos) CAT = j; }
+  }catch(e){}
+  cargarLocal();
+  if(!DB.length){
+    try{ const r = await fetch('proyectos_db.json',{cache:'no-store'}); if(r.ok){ DB = normalizeDB(await r.json()); } }catch(e){}
+  }
+  DB = normalizeDB(DB);
+  // Ajusta el consecutivo de ID de proyecto según lo que ya exista
+  DB.forEach(p=>{ const n=parseInt(p.id); if(!isNaN(n) && n>=idProySeq) idProySeq=n+1; });
+  renderListasComunes();
+  renderDB(); renderProyectoSelect(); renderPNASelect(); renderLista(); validar();
+  aplicarLock();
+  initMapa();
+}
+
+function normalizeDB(db){
+  return (db||[]).map(r=>({
+    id: r.id!=null? String(r.id) : '',
+    codigo_banco: r.codigo_banco||r['Código_Banco']||'',
+    proyecto: r.proyecto||'',
+    estado: r.estado||'',
+    fase: r.fase||'',
+    municipio: r.municipio||'',
+    contrato: r.contrato||''
+  }));
+}
+
+/* ===========================================================
+   LISTAS COMUNES (Estado, Fase, Municipio) y PNA
+   =========================================================== */
+function opts(arr, ph){
+  let h = ph? `<option value="">${esc(ph)}</option>` : '';
+  (arr||[]).forEach(v=> h+=`<option value="${esc(v)}">${esc(v)}</option>`);
+  return h;
+}
+function renderListasComunes(){
+  const L = CAT.listas_comunes||CATALOGO_SEED.listas_comunes;
+  document.getElementById('nEstado').innerHTML = opts(L.estado_proyecto, 'Estado');
+  document.getElementById('nFase').innerHTML   = opts(L.fase_proyecto, 'Fase');
+  document.getElementById('nMun').innerHTML    = opts(L.municipios, 'Municipio');
+}
+function renderPNASelect(){
+  const s=document.getElementById('fPNA'); const prev=s.value;
+  s.innerHTML='<option value="">— Seleccione permiso —</option>';
+  (CAT.permisos||[]).forEach(p=> s.innerHTML+=`<option value="${esc(p.pna)}">${esc(p.pna)} — ${esc(p.nombre_completo)}</option>`);
+  if(prev) s.value=prev;
+}
+function permisoDe(pna){ return (CAT.permisos||[]).find(p=>p.pna===pna); }
+
+/* ===========================================================
+   BASE DE PROYECTOS
+   =========================================================== */
+function renderDB(){
+  const b = document.getElementById('dbBody'); b.innerHTML='';
+  if(!DB.length){ b.innerHTML='<tr><td colspan="8" class="text-center mini py-2">Sin proyectos en la base.</td></tr>'; guardarLocal(); return; }
+  DB.forEach((r,i)=>{
+    b.innerHTML += `<tr>
+      <td><b>${esc(r.id)}</b></td><td>${esc(r.codigo_banco)}</td><td>${esc(r.proyecto)}</td><td>${esc(r.estado)}</td>
+      <td>${esc(r.fase)}</td><td>${esc(r.municipio)}</td><td>${esc(r.contrato)}</td>
+      <td>${dbUnlocked ? `<button class="btn btn-sm btn-outline-danger py-0" onclick="delDB(${i})">🗑</button>` : '<span class="mini">🔒</span>'}</td></tr>`;
+  });
+  guardarLocal();
+}
+function addDB(){
+  if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
+  const cb=val('nCodBanco').trim(), p=val('nProy').trim(), es=val('nEstado'), fa=val('nFase'), mu=val('nMun'), co=val('nContrato').trim();
+  if(!cb || !p){ alert('Código Banco y Proyecto son obligatorios.'); return; }
+  const id = String(idProySeq++).padStart(4,'0');
+  DB.push({id, codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co});
+  ['nCodBanco','nProy','nContrato'].forEach(x=>document.getElementById(x).value='');
+  renderDB(); renderProyectoSelect();
+}
+function delDB(i){ if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; } if(confirm('¿Eliminar el proyecto '+DB[i].id+' de la base?')){ DB.splice(i,1); renderDB(); renderProyectoSelect(); } }
+function exportarDB(){ descargar(JSON.stringify(DB,null,2), 'proyectos_db.json', 'application/json'); }
+function importarDB(){
+  if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; }
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  inp.onchange=e=>{ const f=e.target.files[0]; const rd=new FileReader();
+    rd.onload=()=>{ try{ DB=normalizeDB(JSON.parse(rd.result)); idProySeq=1; DB.forEach(p=>{const n=parseInt(p.id); if(!isNaN(n)&&n>=idProySeq) idProySeq=n+1;}); renderDB(); renderProyectoSelect(); alert('Base cargada: '+DB.length+' proyectos.'); }catch(err){ alert('JSON inválido.'); } };
+    rd.readAsText(f); };
+  inp.click();
+}
+
+function renderProyectoSelect(){
+  const s=document.getElementById('fProyecto'); const prev=s.value;
+  s.innerHTML='<option value="">— Seleccione proyecto —</option>';
+  DB.forEach(r=> s.innerHTML+=`<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.codigo_banco)} — ${esc(r.proyecto)}</option>`);
+  if(prev) s.value=prev; autoLlenarProyecto();
+}
+function autoLlenarProyecto(){
+  const id=val('fProyecto'); const r=DB.find(x=>x.id===id) || {};
+  set('fID', r.id||''); set('fCodBanco', r.codigo_banco||''); set('fEstado', r.estado||'');
+  set('fFase', r.fase||''); set('fMunicipio', r.municipio||''); set('fContrato', r.contrato||'');
+}
+
+/* ===========================================================
+   PNA -> autocompleta autoridad, plazo, estados, concesión
+   =========================================================== */
+function autoLlenarPNA(){
+  const pna=val('fPNA'); const p=permisoDe(pna);
+  const info=document.getElementById('pnaInfo'); const boxCon=document.getElementById('boxConcesion');
+  const hEstado=document.getElementById('hEstado');
+  if(!p){ info.style.display='none'; boxCon.style.display='none'; hEstado.innerHTML='<option value="">— Estado de trámite —</option>'; return; }
+  info.style.display='block';
+  info.innerHTML = `<b>Autoridad:</b> ${esc(p.autoridad)} <span class="mini">(${esc(p.autoridad_detalle||'')})</span><br>
+                    <b>Tiempo de gestión:</b> ${esc((p.tiempo_gestion||{}).texto||'')}`;
+  boxCon.style.display = p.requiere_concesion ? 'block' : 'none';
+  if(!p.requiere_concesion) set('fConcesion','');
+  // estados de trámite disponibles para este PNA
+  hEstado.innerHTML='<option value="">— Estado de trámite —</option>'+opts(p.estados_tramite);
+  ajustarRadicado();
+}
+/* El campo Radicado solo se habilita si el estado elegido lo permite para ese PNA */
+function ajustarRadicado(){
+  const p=permisoDe(val('fPNA')); const est=val('hEstado');
+  const permite = p && est && (p.radicado_en_estados||[]).includes(est);
+  const rad=document.getElementById('hRadicado');
+  rad.disabled = !permite;
+  rad.placeholder = permite ? 'Radicado' : 'Radicado (no aplica en este estado)';
+  if(!permite) rad.value='';
+}
+
+/* ===========================================================
+   HISTORIAL
+   =========================================================== */
+function addHist(){
+  const est=val('hEstado');
+  if(!val('fPNA')){ alert('Primero selecciona el tipo de permiso (PNA).'); return; }
+  if(!est){ alert('Selecciona el estado de trámite.'); return; }
+  historialActual.push({
+    estado_tramite: est,
+    radicado: val('hRadicado').trim().replace(/\|/g,'/'),
+    fecha_radicacion: val('hFRad'),
+    fecha_respuesta: val('hFResp'),
+    observacion: val('hObs').trim().replace(/\|/g,'/')
+  });
+  ['hRadicado','hObs','hFRad','hFResp'].forEach(id=>set(id,'')); set('hEstado','');
+  ajustarRadicado(); renderHist();
+}
+function delHist(i){ historialActual.splice(i,1); renderHist(); }
+function renderHist(){
+  const b=document.getElementById('histBody');
+  if(!historialActual.length){ b.innerHTML='<tr><td colspan="7" class="text-center mini py-2">Sin filas de historial.</td></tr>'; return; }
+  b.innerHTML='';
+  historialActual.forEach((h,i)=>{
+    b.innerHTML += `<tr>
+      <td>${i+1}</td><td>${esc(h.estado_tramite)}</td><td>${esc(h.radicado)||'—'}</td>
+      <td>${fmtDMY(h.fecha_radicacion)}</td><td>${fmtDMY(h.fecha_respuesta)}</td><td>${esc(h.observacion)||'—'}</td>
+      <td><button class="btn btn-sm btn-outline-danger py-0" onclick="delHist(${i})">🗑</button></td></tr>`;
+  });
+}
+function estadoActual(h){ return (h && h.length)? h[h.length-1].estado_tramite : '—'; }
+
+/* ===========================================================
+   MAPA (Leaflet) + DIBUJO (punto, línea, polígono)
+   =========================================================== */
+let map, capaTrazados, dibujoModo=null, dibujoTemp=[], dibujoLayer=null;
+function initMapa(){
+  map = L.map('map').setView([6.2612, -75.5722], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+  capaTrazados = L.layerGroup().addTo(map);
+  map.on('click', onMapClick);
+  map.on('dblclick', onMapDbl);
+}
+function modoDibujo(tipo){
+  dibujoModo=tipo; dibujoTemp=[];
+  if(dibujoLayer){ map.removeLayer(dibujoLayer); dibujoLayer=null; }
+  const h=document.getElementById('hint'); h.style.display='block';
+  if(tipo==='linea') h.textContent='Modo LÍNEA: clic para vértices, doble-clic para terminar.';
+  else if(tipo==='poligono') h.textContent='Modo POLÍGONO: clic para vértices, doble-clic para cerrar.';
+  else h.textContent='Modo PUNTO: clic para colocar el punto.';
+  if(tipo!=='punto') map.doubleClickZoom.disable();
+}
+function cancelarDibujo(){ dibujoModo=null; dibujoTemp=[]; if(dibujoLayer){map.removeLayer(dibujoLayer);dibujoLayer=null;} document.getElementById('hint').style.display='none'; map.doubleClickZoom.enable(); }
+function onMapClick(e){
+  if(!dibujoModo) return;
+  const ll=[e.latlng.lat, e.latlng.lng];
+  if(dibujoModo==='punto'){ finalizarGeom('Point', [ll]); cancelarDibujo(); return; }
+  dibujoTemp.push(ll);
+  if(dibujoLayer) map.removeLayer(dibujoLayer);
+  if(dibujoModo==='poligono') dibujoLayer=L.polygon(dibujoTemp,{color:'#8e44ad',weight:3,fillOpacity:.2}).addTo(map);
+  else dibujoLayer=L.polyline(dibujoTemp,{color:'#d56b00',weight:5}).addTo(map);
+}
+function onMapDbl(e){
+  if(dibujoModo==='linea' && dibujoTemp.length>=2){ finalizarGeom('LineString', dibujoTemp.slice()); cancelarDibujo(); }
+  else if(dibujoModo==='poligono' && dibujoTemp.length>=3){ finalizarGeom('Polygon', dibujoTemp.slice()); cancelarDibujo(); }
+}
+function finalizarGeom(tipo, coords){
+  const t = trazados.find(x=>x.id===editandoId);
+  if(t){ t.geomType=tipo; t.coords=coords; }  // adjunta al permiso en edición
+  else { // crea uno nuevo en edición
+    const nt = nuevoTrazadoVacio(); nt.geomType=tipo; nt.coords=coords; trazados.push(nt); editandoId=nt.id;
+    // sincroniza formulario con lo poco que haya
+  }
+  renderLista(); dibujarTodo(); validar();
+  document.getElementById('editHint').textContent='Geometría lista ('+tipoLegible(tipo)+'). Completa los datos y presiona "Guardar / Actualizar".';
+}
+function tipoLegible(t){ return t==='Point'?'punto':(t==='Polygon'?'polígono':'línea'); }
+
+/* ===========================================================
+   IMPORTAR KMZ / KML
+   =========================================================== */
+async function importarGeom(file){
+  if(!file) return;
+  let kmlText='';
+  try{
+    if(file.name.toLowerCase().endsWith('.kmz')){
+      const zip = await JSZip.loadAsync(file);
+      const kmlName = Object.keys(zip.files).find(n=>n.toLowerCase().endsWith('.kml'));
+      if(!kmlName){ alert('El KMZ no contiene un .kml'); return; }
+      kmlText = await zip.files[kmlName].async('string');
+    }else{ kmlText = await file.text(); }
+  }catch(e){ alert('No se pudo leer el archivo: '+e.message); return; }
+  const dom = new DOMParser().parseFromString(kmlText, 'text/xml');
+  const placemarks = getByLocal(dom, 'Placemark');
+  if(!placemarks.length){ alert('No se encontraron trazados (Placemark) en el archivo.'); return; }
+  let importados=0;
+  placemarks.forEach(pm=>{
+    const nombre = textLocal(pm,'name') || 'SIN_NOMBRE';
+    const desc   = textLocal(pm,'description') || '';
+    const meta   = parseDescripcion(desc);
+    let geomType=null, coords=[];
+    const ls=getByLocal(pm,'LineString')[0], pt=getByLocal(pm,'Point')[0], pg=getByLocal(pm,'Polygon')[0];
+    if(pg){ geomType='Polygon'; const ring=getByLocal(pg,'LinearRing')[0]; coords=parseCoords(ring?textLocal(ring,'coordinates'):''); }
+    else if(ls){ geomType='LineString'; coords=parseCoords(textLocal(ls,'coordinates')); }
+    else if(pt){ geomType='Point'; coords=parseCoords(textLocal(pt,'coordinates')); }
+    else return;
+    const t=nuevoTrazadoVacio();
+    t.nombre=nombre; t.geomType=geomType; t.coords=coords;
+    t.id=meta.id||''; t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||'';
+    t.estado=meta.estado||''; t.fase=meta.fase||''; t.municipio=meta.municipio||''; t.contrato=meta.contrato||'';
+    t.pna=meta.pna||''; t.concesion=meta.concesion||'';
+    t.historial = meta.historial || [];
+    trazados.push(t); importados++;
+  });
+  renderLista(); dibujarTodo(); validar(); ajustarVista();
+  alert(importados+' permiso(s) importado(s). Revisa cada uno en la tabla y complétalos si falta algo.');
+}
+
+/* ===========================================================
+   FORMULARIO ↔ TRAZADO
+   =========================================================== */
+function nuevoTrazadoVacio(){
+  return {id:'', nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', historial:[], _uid:idSeq++};
+}
+function cargarEnForm(t){
+  editandoId=t._uid;
+  set('fNombre',t.nombre);
+  // intenta seleccionar el proyecto por ID
+  if(t.id && DB.find(x=>x.id===t.id)){ set('fProyecto',t.id); autoLlenarProyecto(); }
+  else { set('fProyecto',''); set('fID',t.id); set('fCodBanco',t.codigo_banco); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
+  set('fPNA',t.pna); autoLlenarPNA(); set('fConcesion',t.concesion);
+  historialActual = JSON.parse(JSON.stringify(t.historial||[])); renderHist();
+  document.getElementById('editHint').textContent='Editando: '+(t.nombre||'(sin nombre)');
+}
+function guardarTrazado(){
+  let t = trazados.find(x=>x._uid===editandoId);
+  if(!t){ t=nuevoTrazadoVacio(); trazados.push(t); editandoId=t._uid; }
+  t.nombre=val('fNombre').trim();
+  // Datos de identidad: si se eligió un proyecto de la base, se copian de allí;
+  // si no (p. ej. permiso importado sin proyecto en la base), se conservan los que ya trae.
+  const pr=DB.find(x=>x.id===val('fProyecto'));
+  if(pr){ t.id=pr.id; t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
+  else { t.id=val('fID').trim(); t.codigo_banco=val('fCodBanco').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
+  t.pna=val('fPNA'); t.concesion=val('fConcesion').trim().replace(/\|/g,'/');
+  t.historial = JSON.parse(JSON.stringify(historialActual));
+  // geometría en curso sin cerrar
+  if(!t.geomType && dibujoTemp.length){
+    if(dibujoModo==='linea' && dibujoTemp.length>=2){ t.geomType='LineString'; t.coords=dibujoTemp.slice(); cancelarDibujo(); }
+    else if(dibujoModo==='poligono' && dibujoTemp.length>=3){ t.geomType='Polygon'; t.coords=dibujoTemp.slice(); cancelarDibujo(); }
+    else if(dibujoModo==='punto'){ t.geomType='Point'; t.coords=[dibujoTemp[0]]; cancelarDibujo(); }
+  }
+  if(!t.geomType){ alert('Este permiso no tiene geometría. Dibuja o importa primero.'); return; }
+  const p=permisoDe(t.pna);
+  if(p && p.requiere_concesion && !t.concesion){ if(!confirm('Este permiso (ANI) normalmente requiere Concesión y está vacía. ¿Guardar de todos modos?')) return; }
+  renderLista(); dibujarTodo(); validar();
+  document.getElementById('editHint').textContent='Guardado ✔';
+}
+function limpiarForm(){
+  editandoId=null; historialActual=[]; renderHist();
+  ['fNombre','fID','fCodBanco','fEstado','fFase','fMunicipio','fContrato','fConcesion'].forEach(id=>set(id,''));
+  set('fProyecto',''); set('fPNA',''); autoLlenarPNA();
+  document.getElementById('editHint').textContent='';
+}
+function sugerirNombre(){
+  const cb=val('fCodBanco')||'PNA'; const pna=val('fPNA')||'PERM';
+  let max=0; trazados.forEach(t=>{ const m=(t.nombre||'').match(/(\d+)\s*$/); if(m) max=Math.max(max,parseInt(m[1])); });
+  set('fNombre', (cb+'_'+pna+'_'+String(max+1).padStart(2,'0')).replace(/\s+/g,'_'));
+}
+function editar(uid){ const t=trazados.find(x=>x._uid===uid); if(t){ cargarEnForm(t); window.scrollTo({top:0,behavior:'smooth'}); } }
+function duplicar(uid){
+  const o=trazados.find(x=>x._uid===uid); if(!o) return;
+  const c=JSON.parse(JSON.stringify(o)); c._uid=idSeq++; c.nombre=(o.nombre||'')+'_copia';
+  trazados.push(c); cargarEnForm(c); renderLista(); validar();
+  document.getElementById('editHint').textContent='Copia creada. Ajusta lo que cambie y guarda.';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function borrar(uid){ trazados=trazados.filter(x=>x._uid!==uid); if(editandoId===uid) limpiarForm(); renderLista(); dibujarTodo(); validar(); }
+
+/* ===========================================================
+   LISTA + VALIDACIÓN
+   =========================================================== */
+function faltantes(t){
+  const f=[];
+  if(!t.nombre) f.push('nombre');
+  if(!t.id && !t.proyecto) f.push('proyecto');
+  if(!t.pna) f.push('PNA');
+  if(!t.geomType) f.push('geometría');
+  const p=permisoDe(t.pna);
+  if(p && p.requiere_concesion && !t.concesion) f.push('concesión');
+  if(!(t.historial||[]).length) f.push('historial');
+  return f;
+}
+function renderLista(){
+  const b=document.getElementById('listaBody'); document.getElementById('cnt').textContent=trazados.length;
+  if(!trazados.length){ b.innerHTML='<tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr>'; return; }
+  b.innerHTML='';
+  trazados.forEach((t,i)=>{
+    const f=faltantes(t); const p=permisoDe(t.pna);
+    const estado = f.length ? `<span class="badge badge-bad">Falta: ${f.join(', ')}</span>` : `<span class="badge badge-ok">Completo</span>`;
+    b.innerHTML += `<tr>
+      <td>${i+1}</td><td>${esc(t.nombre)||'<i class="mini">—</i>'}</td><td>${tipoLegible(t.geomType)}</td>
+      <td>${esc(t.proyecto)||'—'}</td><td>${esc(t.pna)||'—'}</td><td>${esc(p?p.autoridad:'—')}</td>
+      <td>${(t.historial||[]).length}</td><td>${esc(estadoActual(t.historial))}</td><td>${estado}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm epm-btn py-0" onclick="editar(${t._uid})" title="Editar">✏️</button>
+        <button class="btn btn-sm epm-btn-orange py-0" onclick="duplicar(${t._uid})" title="Duplicar">⧉</button>
+        <button class="btn btn-sm btn-outline-danger py-0" onclick="borrar(${t._uid})" title="Eliminar">🗑</button>
+      </td></tr>`;
+  });
+}
+function validar(){
+  const box=document.getElementById('validBox');
+  if(!trazados.length){ box.innerHTML='Aún no hay permisos cargados.'; return; }
+  const malos=trazados.filter(t=>faltantes(t).length);
+  if(malos.length){ box.innerHTML=`<span class="badge badge-bad">${malos.length}</span> permiso(s) con datos incompletos. Puedes exportar igual, pero revísalos.`; }
+  else{ box.innerHTML=`<span class="badge badge-ok">OK</span> ${trazados.length} permiso(s) completos. Listo para exportar.`; }
+}
+
+/* ===========================================================
+   DIBUJAR EN MAPA
+   =========================================================== */
+function dibujarTodo(){
+  if(!capaTrazados) return; capaTrazados.clearLayers();
+  trazados.forEach(t=>{
+    if(!t.coords||!t.coords.length) return;
+    const p=permisoDe(t.pna); const col=p?p.color:'#009300';
+    let lyr;
+    if(t.geomType==='Point') lyr=L.circleMarker(t.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
+    else if(t.geomType==='Polygon') lyr=L.polygon(t.coords,{color:col,weight:3,fillOpacity:.25});
+    else lyr=L.polyline(t.coords,{color:col,weight:5});
+    lyr.bindTooltip((t.nombre||'(sin nombre)')+' · '+(t.pna||'sin PNA'));
+    lyr.on('click',()=>editar(t._uid));
+    capaTrazados.addLayer(lyr);
+  });
+}
+function ajustarVista(){ const pts=[]; trazados.forEach(t=>(t.coords||[]).forEach(c=>pts.push(c))); if(pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.2)); }
+
+/* ===========================================================
+   EXPORTAR KMZ
+   =========================================================== */
+async function exportarKMZ(){
+  if(!trazados.length){ alert('No hay permisos para exportar.'); return; }
+  const malos=trazados.filter(t=>faltantes(t).length);
+  if(malos.length && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Exportar de todos modos?')) return;
+  const cb=(trazados.find(t=>t.codigo_banco)||{}).codigo_banco || 'PNAs';
+  const nombreArchivo=(cb+'_PNAs').replace(/[^A-Za-z0-9_\-]/g,'_')+'.kmz';
+  const kml=construirKML(nombreArchivo);
+  const zip=new JSZip(); zip.file('doc.kml', kml);
+  const blob=await zip.generateAsync({type:'blob', mimeType:'application/vnd.google-earth.kmz'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombreArchivo; a.click();
+}
+function construirKML(nombreDoc){
+  let body='';
+  trazados.forEach(t=>{
+    const desc=construirDescripcion(t);
+    let geom='';
+    if(t.geomType==='Point'){ const c=t.coords[0]; geom=`<Point><coordinates>${c[1]},${c[0]},0</coordinates></Point>`; }
+    else if(t.geomType==='Polygon'){
+      const arr=t.coords.slice(); if(arr.length && (arr[0][0]!==arr[arr.length-1][0] || arr[0][1]!==arr[arr.length-1][1])) arr.push(arr[0]);
+      const cs=arr.map(c=>`${c[1]},${c[0]},0`).join(' ');
+      geom=`<Polygon><tessellate>1</tessellate><outerBoundaryIs><LinearRing><coordinates>${cs}</coordinates></LinearRing></outerBoundaryIs></Polygon>`;
+    }else{
+      const cs=t.coords.map(c=>`${c[1]},${c[0]},0`).join(' ');
+      geom=`<LineString><tessellate>1</tessellate><coordinates>${cs}</coordinates></LineString>`;
+    }
+    body+=`<Placemark><name>${esc(t.nombre)}</name><description>${esc(desc)}</description>${geom}</Placemark>\n`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${esc(nombreDoc)}</name>
+${body}</Document></kml>`;
+}
+/* La descripción lleva los campos simples con " | " y el HISTORIAL como JSON al final. */
+function construirDescripcion(t){
+  const p=permisoDe(t.pna)||{};
+  const partes=[
+    `id: ${t.id}`,
+    `codigo_banco: ${t.codigo_banco}`,
+    `proyecto: ${t.proyecto}`,
+    `estado: ${t.estado}`,
+    `fase: ${t.fase}`,
+    `municipio: ${t.municipio}`,
+    `contrato: ${t.contrato}`,
+    `pna: ${t.pna}`,
+    `autoridad: ${p.autoridad||''}`,
+    `tiempo_gestion: ${(p.tiempo_gestion||{}).texto||''}`
+  ];
+  if(t.concesion) partes.push(`concesion: ${t.concesion}`);
+  let s = partes.join(' | ');
+  s += ' | historial: ' + JSON.stringify(t.historial||[]);
+  return s;
+}
+
+/* ===========================================================
+   UTILIDADES
+   =========================================================== */
+function parseDescripcion(desc){
+  const out={};
+  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion'];
+  campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
+  const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
+  if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }
+  return out;
+}
+function parseCoords(txt){
+  if(!txt) return [];
+  return txt.trim().split(/\s+/).map(tok=>{ const p=tok.split(','); return [parseFloat(p[1]), parseFloat(p[0])]; }).filter(c=>!isNaN(c[0])&&!isNaN(c[1]));
+}
+function getByLocal(node,local){ const all=node.getElementsByTagName('*'); const out=[]; for(const el of all){ if(el.localName===local) out.push(el); } return out; }
+function textLocal(node,local){ const els=getByLocal(node,local); return els.length? (els[0].textContent||'').trim() : ''; }
+function fmtDMY(iso){ if(!iso) return '—'; const m=String(iso).match(/(\d{4})-(\d{2})-(\d{2})/); return m? `${m[3]}/${m[2]}/${m[1]}` : esc(iso); }
+function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function val(id){ const el=document.getElementById(id); return el? el.value : ''; }
+function set(id,v){ const el=document.getElementById(id); if(el) el.value = v==null?'':v; }
+function descargar(txt,nombre,tipo){ const b=new Blob([txt],{type:tipo}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=nombre; a.click(); }
+
+init();
+</script>
+</body>
+</html>
