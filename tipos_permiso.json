@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "descripcion": "Catálogo maestro de la Plataforma Control Integral PNAs. Es la ÚNICA fuente de verdad: el Generador de KMZ, el código Python y el Dashboard leen de este archivo. Para agregar o cambiar un permiso se edita AQUÍ, no en los programas.",
+    "version": "1.0",
+    "fecha_creacion": "2026-08-21",
+    "grupo": "Grupo EPM · Centro de Gestión Servicios Técnicos"
+  },
+
+  "listas_comunes": {
+    "estado_proyecto": [
+      "Identificación",
+      "Formulación",
+      "Ejecución",
+      "Terminación",
+      "Evaluación"
+    ],
+    "fase_proyecto": [
+      "Iniciativa",
+      "Idea",
+      "Prefactibilidad",
+      "Factibilidad",
+      "Planeación Ejecución",
+      "Diseño",
+      "Desarrollo",
+      "Puesta en Servicio",
+      "Cierre",
+      "Operación",
+      "Desmantelación"
+    ],
+    "municipios": [
+      "Barbosa",
+      "Girardota",
+      "Copacabana",
+      "Bello",
+      "Medellín",
+      "Itagüí",
+      "Envigado",
+      "Sabaneta",
+      "Caldas",
+      "La Estrella"
+    ],
+    "geometrias_permitidas": ["punto", "linea", "poligono"]
+  },
+
+  "estados_tramite_catalogo": {
+    "simple": ["Radicado", "Negado", "Aprobado"],
+    "completo": [
+      "Radicado",
+      "Observado",
+      "Revisión_Ajustes",
+      "Resolución_Aprobatoria",
+      "Gestión_Pólizas",
+      "Gestión_Acta_Inicio",
+      "Gestión_Suspensión",
+      "Gestión_Reinicio"
+    ]
+  },
+
+  "permisos": [
+    {
+      "pna": "PMT_Diseño",
+      "nombre_completo": "Plan de Manejo de Tránsito en etapa de Diseño",
+      "autoridad": "Municipio",
+      "autoridad_detalle": "Secretaría de Movilidad de cada municipio donde se desarrolla el proyecto",
+      "requiere_concesion": false,
+      "tiempo_gestion": { "valor": 15, "unidad": "dias_habiles", "texto": "15 días hábiles" },
+      "estados_tramite": ["Radicado", "Negado", "Aprobado"],
+      "radicado_en_estados": ["Radicado", "Negado", "Aprobado"],
+      "color": "#009300",
+      "geometrias": ["punto", "linea", "poligono"]
+    },
+    {
+      "pna": "PUZV",
+      "nombre_completo": "Permiso de Uso de Zona de Vía",
+      "autoridad": "INVIAS",
+      "autoridad_detalle": "Instituto Nacional de Vías (INVIAS)",
+      "requiere_concesion": false,
+      "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
+      "estados_tramite": [
+        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
+      ],
+      "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "color": "#0066CC",
+      "geometrias": ["punto", "linea", "poligono"]
+    },
+    {
+      "pna": "Cierre_Via",
+      "nombre_completo": "Permiso de Cierre de Vía",
+      "autoridad": "INVIAS",
+      "autoridad_detalle": "Instituto Nacional de Vías (INVIAS)",
+      "requiere_concesion": false,
+      "tiempo_gestion": { "valor": 3, "unidad": "meses", "texto": "3 meses" },
+      "estados_tramite": [
+        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
+      ],
+      "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "color": "#d56b00",
+      "geometrias": ["punto", "linea", "poligono"]
+    },
+    {
+      "pna": "PUOI-IVCF",
+      "nombre_completo": "Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea",
+      "autoridad": "ANI",
+      "autoridad_detalle": "Agencia Nacional de Infraestructura (ANI). Acompañado de la Concesión Vial que administra el segmento para la ANI.",
+      "requiere_concesion": true,
+      "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
+      "estados_tramite": [
+        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
+      ],
+      "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "color": "#8e44ad",
+      "geometrias": ["punto", "linea", "poligono"]
+    },
+    {
+      "pna": "PIV",
+      "nombre_completo": "Permiso de Intervención Vial",
+      "autoridad": "Gobernación",
+      "autoridad_detalle": "Gobernación de Antioquia",
+      "requiere_concesion": false,
+      "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
+      "estados_tramite": [
+        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
+      ],
+      "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "color": "#e6a800",
+      "geometrias": ["punto", "linea", "poligono"]
+    }
+  ]
+}
