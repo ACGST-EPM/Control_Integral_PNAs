@@ -118,18 +118,20 @@ C:\Users\lmarinza\PLATAFORMA_PNAs
 
 Los archivos que van al **repositorio** (carpeta `PLATAFORMA_PNAs`):
 - `tipos_permiso.json` — catálogo maestro.
-- `Generador_KMZ.html` — Fase 1 (a construir).
-- `Plataforma.html` — Fase 3 (a construir).
+- `Generador_KMZ_PNAs.html` — Fase 1.
+- `Plataforma_PNAs.html` — Fase 3 (a construir).
 - `ARQUITECTURA_Fase1_Generador_KMZ.md` — este documento.
+
+> **Convención de nombres:** todos los archivos de esta plataforma llevan el sufijo `_PNAs` (p. ej. `Generador_KMZ_PNAs.html`, `Plataforma_PNAs.html`, `proceso_pnas_qgis.py`) para distinguirlos de los de la plataforma de PMTs de obra. Así, si a futuro se integran ambas soluciones, no habrá choque de nombres.
 
 ---
 
 ## 7. Estado de avance
 
 - [x] **Fase 1 – Definición de estructura y catálogo** (este documento + `tipos_permiso.json`).
-- [ ] Fase 1 – Construcción del `Generador_KMZ.html` (con polígonos + historial + ID automático).
-- [ ] Fase 2 – Script Python/QGIS que lee los KMZ y consolida el reporte.
-- [ ] Fase 3 – Dashboard adaptado a PNAs (filtros por PNA, autoridad, estado de trámite, semáforo de plazos).
+- [x] **Fase 1 – Construcción del `Generador_KMZ_PNAs.html`** (con polígonos + historial + ID automático).
+- [ ] Fase 2 – Script Python/QGIS (`proceso_pnas_qgis.py`) que lee los KMZ y consolida el reporte.
+- [ ] Fase 3 – Dashboard (`Plataforma_PNAs.html`) adaptado a PNAs (filtros por PNA, autoridad, estado de trámite, semáforo de plazos).
 
 ---
 
