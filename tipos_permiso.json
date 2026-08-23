@@ -66,6 +66,8 @@
       "tiempo_gestion": { "valor": 15, "unidad": "dias_habiles", "texto": "15 días hábiles" },
       "estados_tramite": ["Radicado", "Negado", "Aprobado"],
       "radicado_en_estados": ["Radicado", "Negado", "Aprobado"],
+      "respuesta_en_estados": ["Negado", "Aprobado"],
+      "estados_culminables": [],
       "color": "#009300",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -81,6 +83,8 @@
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
+      "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "color": "#0066CC",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -96,6 +100,8 @@
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
+      "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "color": "#d56b00",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -111,6 +117,8 @@
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
+      "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "color": "#8e44ad",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -126,6 +134,8 @@
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado", "Observado", "Resolución_Aprobatoria"],
+      "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
+      "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "color": "#e6a800",
       "geometrias": ["punto", "linea", "poligono"]
     }
