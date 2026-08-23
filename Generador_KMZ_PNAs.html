@@ -211,7 +211,7 @@
         <b>Para actualizar un permiso o agregar uno nuevo a un proyecto existente:</b>
         1) Importa el KMZ actual del proyecto (Paso 2) → trae todos sus permisos con su historial.
         2) Selecciona el permiso, agrega la <b>nueva fila de historial</b> (el avance) o crea un permiso nuevo.
-        3) Exporta → descarga <code>&lt;CódigoBanco&gt;.kmz</code> con todo acumulado.
+        3) Exporta → descarga <code>&lt;CódigoBanco&gt;_&lt;Proyecto&gt;.kmz</code> con todo acumulado.
         4) Guárdalo en <code>01_KMZ_Entrada</code> reemplazando el anterior y haz commit + push.
         <span class="text-success">Tu sesión de trabajo se autoguarda en este navegador como respaldo.</span>
       </div>
@@ -709,7 +709,9 @@ async function exportarKMZ(){
   const codigos=[...new Set(trazados.map(t=>t.codigo_banco).filter(Boolean))];
   if(codigos.length>1 && !confirm('Hay permisos de varios proyectos ('+codigos.join(', ')+') en esta sesión.\nLo recomendable es UN KMZ por proyecto. ¿Exportar todos juntos de todos modos?\n(Si prefieres, usa "Nueva sesión" y trabaja un proyecto a la vez.)')) return;
   const cb=codigos[0] || 'PNAs';
-  const nombreArchivo=(cb).replace(/[^A-Za-z0-9_\-]/g,'_')+'.kmz';
+  const proy=(trazados.find(t=>t.codigo_banco===cb)||{}).proyecto || '';
+  const base = proy ? (cb+'_'+proy) : cb;   // nombre = CódigoBanco_Proyecto (más reconocible)
+  const nombreArchivo=(base).replace(/[^A-Za-z0-9_\-]/g,'_')+'.kmz';
   const kml=construirKML(nombreArchivo);
   const zip=new JSZip(); zip.file('doc.kml', kml);
   const blob=await zip.generateAsync({type:'blob', mimeType:'application/vnd.google-earth.kmz'});

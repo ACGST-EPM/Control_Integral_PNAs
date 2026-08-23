@@ -1,6 +1,6 @@
 # Carpeta 01_KMZ_Entrada
 
-Aquí van los **KMZ de cada proyecto** (uno por proyecto, nombrado con su **Código Banco**, p. ej. `CB123.kmz`).
+Aquí van los **KMZ de cada proyecto** (uno por proyecto, nombrado como **`CódigoBanco_Proyecto`**, p. ej. `CB123_ORFELINATO.kmz`).
 
 ## Flujo
 1. En el generador (`Generador_KMZ_PNAs.html`) importas el KMZ actual del proyecto, agregas el avance del trámite (nueva fila de historial) o un permiso nuevo, y exportas.
