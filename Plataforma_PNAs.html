@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plataforma Control Integral PNAs — EPM</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{ --epm-verde:#009300; --epm-lima:#b7c200; --epm-naranja:#d56b00; }
+  body{ background:#f8f9fa; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+  .epm-header{ background:#fff; border-bottom:4px solid var(--epm-verde); box-shadow:0 2px 8px rgba(0,0,0,.1); padding:8px 20px; }
+  .epm-title{ color:var(--epm-verde); font-weight:bold; font-size:19px; margin-left:12px; vertical-align:middle; }
+  .epm-card-header{ background:var(--epm-verde); color:#fff; font-weight:bold; padding:8px 14px; font-size:.95rem;}
+  .epm-btn{ background:var(--epm-lima); color:#000; font-weight:bold; border:none; }
+  .epm-btn:hover{ background:#99a800; }
+  .epm-btn-green{ background:var(--epm-verde); color:#fff; font-weight:bold; border:none;}
+  #map{ height:60vh; min-height:420px; border:3px solid var(--epm-verde); border-radius:8px; }
+  .mini{ font-size:.72rem; color:#6c757d;}
+  .kpi{ background:#fff; border-left:4px solid var(--epm-verde); border-radius:6px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .kpi .n{ font-size:1.5rem; font-weight:bold; }
+  .kpi .t{ font-size:.72rem; color:#6c757d; text-transform:uppercase; font-weight:bold;}
+  table td, table th{ font-size:.8rem; vertical-align:middle;}
+  .sem{ font-weight:bold; white-space:nowrap; }
+  .sem-verde{ color:#009300;} .sem-amarillo{ color:#e6a800;} .sem-rojo{ color:#dc3545;} .sem-gris{ color:#6c757d;}
+  .leyenda span{ display:inline-block; margin-right:10px; font-size:.72rem;}
+  .leyenda i{ display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:3px; vertical-align:middle;}
+  .select2-container--bootstrap-5 .select2-selection{ font-size:.8rem; min-height:31px;}
+  .tl{ border-left:3px solid var(--epm-verde); margin-left:8px; padding-left:14px;}
+  .tl-item{ position:relative; margin-bottom:10px;}
+  .tl-item::before{ content:''; position:absolute; left:-21px; top:3px; width:11px; height:11px; border-radius:50%; background:var(--epm-verde); border:2px solid #fff;}
+  .tl-estado{ font-weight:bold; color:#245c24; font-size:.85rem;}
+</style>
+</head>
+<body>
+<div class="epm-header d-flex align-items-center">
+  <span style="font-size:24px">🗺️</span>
+  <span class="epm-title">PLATAFORMA CONTROL INTEGRAL PNAs</span>
+  <span class="ms-auto mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
+</div>
+
+<div class="container-fluid p-3">
+  <div class="alert alert-light border mb-3 d-flex flex-wrap align-items-center gap-2" style="border-left:5px solid var(--epm-lima)!important">
+    <div class="flex-grow-1">
+      <b>Fuente de datos:</b> <span id="fuente">buscando KMZ en el repositorio…</span>
+    </div>
+    <label class="btn btn-sm epm-btn mb-0">📂 Cargar KMZ (uno o varios)
+      <input type="file" accept=".kmz,.kml" multiple onchange="cargarArchivos(this.files)" hidden></label>
+    <a href="Generador_KMZ_PNAs.html" target="_blank" class="btn btn-sm epm-btn-green">🗂️ Abrir Generador</a>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-md-3"><div class="kpi"><div class="t">Permisos</div><div class="n" id="kpiTotal">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo (proyecto)</div><div class="n sem-rojo" id="kpiRiesgo">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#d56b00"><div class="t">Vencidos con autoridad</div><div class="n" style="color:#d56b00" id="kpiVencido">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#0066CC"><div class="t">Activados / Listos</div><div class="n" style="color:#0066CC" id="kpiActivo">0</div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <!-- FILTROS + MAPA -->
+    <div class="col-12 col-lg-5">
+      <div class="card mb-3" style="border-color:var(--epm-verde)">
+        <div class="epm-card-header">⚙️ Filtros</div>
+        <div class="card-body py-2">
+          <div class="row g-2">
+            <div class="col-6"><label class="mini fw-bold">Tipo de permiso (PNA)</label><select id="fPNA" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Autoridad</label><select id="fAut" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Municipio</label><select id="fMun" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Estado actual</label><select id="fEst" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-12"><label class="mini fw-bold">Proyecto</label><select id="fProy" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-12"><button id="btnLimpiar" class="btn btn-sm epm-btn w-100">🧹 Limpiar filtros</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="map"></div>
+      <div class="leyenda mt-2" id="leyenda"></div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="col-12 col-lg-7">
+      <div class="card" style="border-top:4px solid var(--epm-lima)">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="tabla" class="table table-sm table-striped table-hover" style="width:100%">
+              <thead class="table-dark">
+                <tr>
+                  <th>ID</th><th>Proyecto</th><th>Cód. Banco</th><th>PNA</th><th>Autoridad</th><th>Municipio</th>
+                  <th>Estado actual</th><th>Últ. radicado</th><th>F. límite</th>
+                  <th>Semáforo gestión</th><th>Semáforo riesgo</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div class="modal fade" id="modalHist" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header" style="background:var(--epm-verde);color:#fff"><h6 class="modal-title" id="mhTitulo">Historial</h6>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="mhBody"></div>
+</div></div></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+/* ============================================================
+   PLATAFORMA CONTROL INTEGRAL PNAs — Dashboard (navegador)
+   Lee los KMZ (repo o carga manual), calcula 2 semáforos y
+   presenta tabla + mapa + filtros + historial.
+   ============================================================ */
+
+/* ---- Catálogo embebido (respaldo) — incluye valor/unidad del plazo ---- */
+const CAT_SEED = {
+  permisos:[
+    {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#009300", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"]},
+    {pna:"PUZV", autoridad:"INVIAS", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#0066CC", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
+    {pna:"Cierre_Via", autoridad:"INVIAS", tiempo_gestion:{valor:3,unidad:"meses",texto:"3 meses"}, color:"#d56b00", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
+    {pna:"PUOI-IVCF", autoridad:"ANI", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#8e44ad", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
+    {pna:"PIV", autoridad:"Gobernación", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#e6a800", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]}
+  ]
+};
+let CAT = CAT_SEED;
+let PERMISOS = [];         // permisos parseados con cálculos
+let map, capa, tabla;
+
+/* Devuelve la ficha del PNA (del catálogo); tolera catálogo sin campos derivados */
+function permisoDe(pna){
+  let p = (CAT.permisos||[]).find(x=>x.pna===pna);
+  if(!p) p = (CAT_SEED.permisos).find(x=>x.pna===pna) || {};
+  // completa campos derivados si el JSON externo no los trae
+  const seed = CAT_SEED.permisos.find(x=>x.pna===pna) || {};
+  return Object.assign({}, seed, p, {
+    estado_activacion: p.estado_activacion || seed.estado_activacion,
+    estados_cierre: p.estados_cierre || seed.estados_cierre,
+    tiempo_gestion: p.tiempo_gestion || seed.tiempo_gestion,
+    color: p.color || seed.color
+  });
+}
+
+/* ================= FECHAS Y PLAZOS ================= */
+function toDate(iso){ if(!iso) return null; const m=String(iso).match(/(\d{4})-(\d{2})-(\d{2})/); return m? new Date(+m[1],+m[2]-1,+m[3]) : null; }
+function fmtDMY(iso){ const d=toDate(iso); if(!d) return '—'; return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+function addBusinessDays(date,n){ const d=new Date(date); let a=0; while(a<n){ d.setDate(d.getDate()+1); const w=d.getDay(); if(w!==0&&w!==6) a++; } return d; }
+function addMonths(date,n){ const d=new Date(date); d.setMonth(d.getMonth()+n); return d; }
+function addDays(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+function diasEntre(a,b){ return Math.round((b-a)/86400000); }
+function hoy(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function calcularVencimiento(start, tg){ if(!tg) return null; return tg.unidad==='dias_habiles' ? addBusinessDays(start, tg.valor) : addMonths(start, tg.valor); }
+
+/* ================= CÁLCULO DE SEMÁFOROS ================= */
+function calcular(p){
+  const perm = permisoDe(p.pna);
+  const tg = perm.tiempo_gestion;
+  const hist = p.historial || [];
+  const estadoActual = hist.length ? hist[hist.length-1].estado_tramite : '';
+  const alcanzo = (est)=> hist.some(h=> (h.estado_tramite||'')===est);
+  // primer "Radicado"
+  const rad = hist.find(h=> (h.estado_tramite||'')==='Radicado');
+  const fRad = rad ? toDate(rad.fecha_radicacion || rad.fecha_respuesta) : null;
+  const ultRad = [...hist].reverse().find(h=>h.radicado);
+  const cerrado = (perm.estados_cierre||[]).some(alcanzo);
+
+  // ---- Semáforo de gestión (reloj normativo) ----
+  let semG = {clase:'sem-gris', txt:'Sin radicar'};
+  if(fRad && tg){
+    const venc = calcularVencimiento(fRad, tg);
+    if(cerrado){ semG = {clase:'sem-verde', txt:'Resuelto'}; }
+    else{
+      const dr = diasEntre(hoy(), venc);
+      if(dr < 0)      semG = {clase:'sem-rojo',     txt:'Vencido ('+Math.abs(dr)+'d)'};
+      else if(dr<=30) semG = {clase:'sem-amarillo', txt:'Por vencer ('+dr+'d)'};
+      else            semG = {clase:'sem-verde',    txt:'A tiempo ('+dr+'d)'};
+    }
+  }
+
+  // ---- Semáforo de riesgo al proyecto (llegar a activación antes del límite) ----
+  const target = perm.estado_activacion;
+  const limite = toDate(p.fecha_limite_requerida);
+  const holg = parseInt(p.holgura_dias)||0;
+  let semR = {clase:'sem-gris', txt:'Sin fecha límite'};
+  if(alcanzo(target)){
+    semR = {clase:'sem-verde', txt:'Activado / Listo'};
+  } else if(limite && tg){
+    // Estimación de cuándo estará LISTO para activarse:
+    //  - Si ya está otorgado (Resolución_Aprobatoria): la activación es inminente -> hoy.
+    //  - Si aún en trámite: fecha de radicación + plazo normativo; nunca en el pasado.
+    let estimadaLista;
+    if(cerrado){ estimadaLista = hoy(); }
+    else { estimadaLista = calcularVencimiento(fRad || hoy(), tg); if(estimadaLista < hoy()) estimadaLista = hoy(); }
+    const limiteAjustado = addDays(limite, -holg);
+    const margen = diasEntre(estimadaLista, limiteAjustado);
+    if(margen < 0)       semR = {clase:'sem-rojo',     txt:'En riesgo ('+Math.abs(margen)+'d tarde)'};
+    else if(margen<=30)  semR = {clase:'sem-amarillo', txt:'Ajustado ('+margen+'d)'};
+    else                 semR = {clase:'sem-verde',    txt:'A tiempo ('+margen+'d)'};
+  }
+
+  p._estadoActual = estadoActual || '—';
+  p._ultRadicado  = ultRad ? ultRad.radicado : '';
+  p._semG = semG; p._semR = semR;
+  p._autoridad = perm.autoridad || p.autoridad || '';
+  p._color = perm.color || '#009300';
+  return p;
+}
+
+/* ================= PARSEO DE KMZ/KML ================= */
+function parseDescripcion(desc){
+  const out={};
+  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
+  campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
+  const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
+  if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }
+  return out;
+}
+function parseCoords(txt){ if(!txt) return []; return txt.trim().split(/\s+/).map(t=>{const p=t.split(','); return [parseFloat(p[1]),parseFloat(p[0])];}).filter(c=>!isNaN(c[0])&&!isNaN(c[1])); }
+function getByLocal(node,local){ const all=node.getElementsByTagName('*'); const o=[]; for(const el of all){ if(el.localName===local) o.push(el);} return o; }
+function textLocal(node,local){ const e=getByLocal(node,local); return e.length?(e[0].textContent||'').trim():''; }
+
+function parsearKML(kmlText, origen){
+  const dom=new DOMParser().parseFromString(kmlText,'text/xml');
+  const pms=getByLocal(dom,'Placemark'); let n=0;
+  pms.forEach(pm=>{
+    const nombre=textLocal(pm,'name')||'SIN_NOMBRE';
+    const meta=parseDescripcion(textLocal(pm,'description')||'');
+    let geomType=null, coords=[];
+    const ls=getByLocal(pm,'LineString')[0], pt=getByLocal(pm,'Point')[0], pg=getByLocal(pm,'Polygon')[0];
+    if(pg){ geomType='Polygon'; const r=getByLocal(pg,'LinearRing')[0]; coords=parseCoords(r?textLocal(r,'coordinates'):''); }
+    else if(ls){ geomType='LineString'; coords=parseCoords(textLocal(ls,'coordinates')); }
+    else if(pt){ geomType='Point'; coords=parseCoords(textLocal(pt,'coordinates')); }
+    const p=Object.assign({nombre, geomType, coords, origen, historial:[]}, meta);
+    calcular(p); PERMISOS.push(p); n++;
+  });
+  return n;
+}
+async function parsearArchivo(file){
+  try{
+    if(file.name.toLowerCase().endsWith('.kmz')){
+      const zip=await JSZip.loadAsync(file);
+      const kmlName=Object.keys(zip.files).find(x=>x.toLowerCase().endsWith('.kml'));
+      if(!kmlName) return 0;
+      return parsearKML(await zip.files[kmlName].async('string'), file.name);
+    }else{ return parsearKML(await file.text(), file.name); }
+  }catch(e){ console.error('Error leyendo',file.name,e); return 0; }
+}
+async function cargarArchivos(files){
+  if(!files||!files.length) return;
+  let tot=0;
+  for(const f of files){ tot+=await parsearArchivo(f); }
+  document.getElementById('fuente').textContent = PERMISOS.length+' permiso(s) cargado(s) (incluye carga manual).';
+  refrescarTodo();
+}
+
+/* ================= CARGA AUTOMÁTICA DESDE EL REPO (GitHub Pages) ================= */
+async function cargarDesdeRepo(){
+  try{
+    const host=window.location.hostname;
+    if(host.indexOf('github.io')===-1){ document.getElementById('fuente').textContent='Abre desde GitHub Pages o usa "Cargar KMZ" para probar en local.'; return; }
+    const owner=host.split('.')[0];
+    const repo=window.location.pathname.split('/').filter(Boolean)[0];
+    const rutas=['', '01_KMZ_Entrada'];
+    let urls=[];
+    for(const ruta of rutas){
+      const api='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+ruta;
+      try{
+        const r=await fetch(api); if(!r.ok) continue;
+        const lista=await r.json();
+        if(Array.isArray(lista)) lista.forEach(x=>{ if(x.type==='file' && /\.kmz$/i.test(x.name)) urls.push(x.download_url); });
+      }catch(e){}
+    }
+    if(!urls.length){ document.getElementById('fuente').textContent='No se encontraron KMZ en el repositorio. Usa "Cargar KMZ" para probar.'; return; }
+    let tot=0;
+    for(const u of urls){ try{ const b=await (await fetch(u)).blob(); const f=new File([b], u.split('/').pop()); tot+=await parsearArchivo(f); }catch(e){} }
+    document.getElementById('fuente').textContent=PERMISOS.length+' permiso(s) cargado(s) desde el repositorio.';
+    refrescarTodo();
+  }catch(e){ document.getElementById('fuente').textContent='No se pudo leer el repositorio. Usa "Cargar KMZ".'; }
+}
+
+/* ================= MAPA ================= */
+function initMapa(){
+  map=L.map('map').setView([6.24,-75.57],10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  capa=L.layerGroup().addTo(map);
+}
+function dibujarMapa(lista){
+  capa.clearLayers(); const pts=[];
+  lista.forEach(p=>{
+    if(!p.coords||!p.coords.length) return;
+    let lyr; const col=p._color;
+    if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
+    else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:2,fillOpacity:.25});
+    else lyr=L.polyline(p.coords,{color:col,weight:5});
+    lyr.bindPopup('<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual));
+    capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
+  });
+  if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
+}
+function leyenda(){
+  const box=document.getElementById('leyenda'); box.innerHTML='';
+  (CAT.permisos||CAT_SEED.permisos).forEach(p=>{ box.innerHTML+=`<span><i style="background:${p.color}"></i>${esc(p.pna)}</span>`; });
+}
+
+/* ================= TABLA + FILTROS ================= */
+function fila(p){
+  return `<tr data-nombre="${esc(p.nombre)}">
+    <td>${esc(p.id||'—')}</td><td>${esc(p.proyecto||'—')}</td><td>${esc(p.codigo_banco||'—')}</td>
+    <td>${esc(p.pna||'—')}</td><td>${esc(p._autoridad||'—')}</td><td>${esc(p.municipio||'—')}</td>
+    <td>${esc(p._estadoActual)}</td><td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
+    <td class="sem ${p._semG.clase}">${p._semG.txt}</td>
+    <td class="sem ${p._semR.clase}">${p._semR.txt}</td>
+    <td><button class="btn btn-sm epm-btn py-0" onclick="verHist('${esc(p.nombre).replace(/'/g,"\\'")}')">🗓️</button></td>
+  </tr>`;
+}
+function llenarFiltro(id, valores){
+  const s=$('#'+id); const prev=s.val()||[];
+  s.empty();
+  Array.from(new Set(valores.filter(Boolean))).sort().forEach(v=> s.append(new Option(v,v, prev.includes(v), prev.includes(v))));
+  s.trigger('change.select2');
+}
+function refrescarFiltros(){
+  llenarFiltro('fPNA', PERMISOS.map(p=>p.pna));
+  llenarFiltro('fAut', PERMISOS.map(p=>p._autoridad));
+  llenarFiltro('fMun', PERMISOS.map(p=>p.municipio));
+  llenarFiltro('fEst', PERMISOS.map(p=>p._estadoActual));
+  llenarFiltro('fProy',PERMISOS.map(p=>p.proyecto));
+}
+function pasaFiltros(p){
+  const g=(id)=> ($('#'+id).val()||[]).filter(Boolean);
+  const fP=g('fPNA'), fA=g('fAut'), fM=g('fMun'), fE=g('fEst'), fPr=g('fProy');
+  if(fP.length && !fP.includes(p.pna)) return false;
+  if(fA.length && !fA.includes(p._autoridad)) return false;
+  if(fM.length && !fM.includes(p.municipio)) return false;
+  if(fE.length && !fE.includes(p._estadoActual)) return false;
+  if(fPr.length && !fPr.includes(p.proyecto)) return false;
+  return true;
+}
+function refrescarTodo(){
+  const lista = PERMISOS.filter(pasaFiltros);
+  // tabla
+  if($.fn.dataTable.isDataTable('#tabla')) tabla.destroy();
+  document.getElementById('tbody').innerHTML = lista.map(fila).join('') || '';
+  tabla=$('#tabla').DataTable({
+    language:{ url:'//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
+    pageLength:10, lengthMenu:[10,25,50,100], order:[[10,'asc']],
+    columnDefs:[{targets:11, orderable:false}],
+    dom:"<'row'<'col-sm-6'l><'col-sm-6 text-end'B>><'row'<'col-12'tr>><'row'<'col-sm-5'i><'col-sm-7'p>>",
+    buttons:[{extend:'excelHtml5', text:'📥 Excel', className:'btn btn-sm btn-success'}]
+  });
+  dibujarMapa(lista);
+  // KPIs
+  document.getElementById('kpiTotal').textContent   = lista.length;
+  document.getElementById('kpiRiesgo').textContent  = lista.filter(p=>p._semR.clase==='sem-rojo').length;
+  document.getElementById('kpiVencido').textContent = lista.filter(p=>p._semG.clase==='sem-rojo').length;
+  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._semR.txt.indexOf('Activado')>=0).length;
+  refrescarFiltros();
+}
+
+/* ================= HISTORIAL (modal) ================= */
+function verHist(nombre){
+  const p=PERMISOS.find(x=>x.nombre===nombre); if(!p) return;
+  document.getElementById('mhTitulo').textContent='Historial — '+p.nombre+' ('+(p.pna||'')+')';
+  let head=`<div class="mb-2 mini">
+    <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Autoridad:</b> ${esc(p._autoridad||'—')} &nbsp;|&nbsp;
+    <b>Municipio:</b> ${esc(p.municipio||'—')} &nbsp;|&nbsp; <b>F. límite:</b> ${fmtDMY(p.fecha_limite_requerida)}
+    ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
+  </div>
+  <div class="mb-3"><span class="sem ${p._semG.clase}">Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
+  <span class="sem ${p._semR.clase}">Riesgo: ${p._semR.txt}</span></div>`;
+  const hist=p.historial||[];
+  let tl = hist.length ? '<div class="tl">'+hist.map(h=>`
+    <div class="tl-item">
+      <div class="tl-estado">${esc(h.estado_tramite||'')}</div>
+      <div class="mini">Radicado: ${esc(h.radicado||'—')} · Radicación: ${fmtDMY(h.fecha_radicacion)} · Respuesta: ${fmtDMY(h.fecha_respuesta)}</div>
+      ${h.observacion?('<div style="font-size:.8rem">'+esc(h.observacion)+'</div>'):''}
+    </div>`).join('')+'</div>' : '<i class="mini">Sin historial registrado.</i>';
+  document.getElementById('mhBody').innerHTML=head+tl;
+  new bootstrap.Modal(document.getElementById('modalHist')).show();
+}
+
+/* ================= UTILIDADES ================= */
+function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ================= ARRANQUE ================= */
+$(document).ready(async function(){
+  $('#fPNA,#fAut,#fMun,#fEst,#fProy').select2({theme:'bootstrap-5', placeholder:'Todos', allowClear:true, closeOnSelect:false, width:'100%'});
+  $('#fPNA,#fAut,#fMun,#fEst,#fProy').on('change', refrescarTodo);
+  $('#btnLimpiar').on('click', function(){ $('#fPNA,#fAut,#fMun,#fEst,#fProy').val(null).trigger('change'); });
+  initMapa();
+  // catálogo
+  try{ const r=await fetch('tipos_permiso.json',{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(j&&j.permisos) CAT=j; } }catch(e){}
+  leyenda();
+  await cargarDesdeRepo();
+});
+</script>
+</body>
+</html>

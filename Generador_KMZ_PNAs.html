@@ -143,6 +143,17 @@
             <label class="req-label">Concesión * <span class="mini">(solo permisos ANI)</span></label>
             <input id="fConcesion" class="form-control form-control-sm" placeholder="Concesión vial que administra el segmento">
           </div>
+          <div class="row g-1 mb-1">
+            <div class="col-7">
+              <label class="req-label">Fecha límite requerida <span class="mini">(del cronograma)</span></label>
+              <input id="fLimite" type="date" class="form-control form-control-sm">
+            </div>
+            <div class="col-5">
+              <label class="req-label">Holgura (días) <span class="mini">opc.</span></label>
+              <input id="fHolgura" type="number" min="0" class="form-control form-control-sm" placeholder="0">
+            </div>
+          </div>
+          <div class="mini mb-2" style="color:#245c24">Fecha en que el proyecto necesita el permiso <b>activo</b> (Gestión_Acta_Inicio). Alimenta el semáforo de riesgo del dashboard.</div>
 
           <!-- HISTORIAL DE GESTION -->
           <div class="hist-box mb-2">
@@ -506,6 +517,7 @@ async function importarGeom(file){
     t.id=meta.id||''; t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||'';
     t.estado=meta.estado||''; t.fase=meta.fase||''; t.municipio=meta.municipio||''; t.contrato=meta.contrato||'';
     t.pna=meta.pna||''; t.concesion=meta.concesion||'';
+    t.fecha_limite_requerida=meta.fecha_limite_requerida||''; t.holgura_dias=meta.holgura_dias||'';
     t.historial = meta.historial || [];
     trazados.push(t); importados++;
   });
@@ -517,7 +529,7 @@ async function importarGeom(file){
    FORMULARIO ↔ TRAZADO
    =========================================================== */
 function nuevoTrazadoVacio(){
-  return {id:'', nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', historial:[], _uid:idSeq++};
+  return {id:'', nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', fecha_limite_requerida:'', holgura_dias:'', historial:[], _uid:idSeq++};
 }
 function cargarEnForm(t){
   editandoId=t._uid;
@@ -526,6 +538,7 @@ function cargarEnForm(t){
   if(t.id && DB.find(x=>x.id===t.id)){ set('fProyecto',t.id); autoLlenarProyecto(); }
   else { set('fProyecto',''); set('fID',t.id); set('fCodBanco',t.codigo_banco); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
   set('fPNA',t.pna); autoLlenarPNA(); set('fConcesion',t.concesion);
+  set('fLimite',t.fecha_limite_requerida||''); set('fHolgura',t.holgura_dias||'');
   historialActual = JSON.parse(JSON.stringify(t.historial||[])); renderHist();
   document.getElementById('editHint').textContent='Editando: '+(t.nombre||'(sin nombre)');
 }
@@ -539,6 +552,7 @@ function guardarTrazado(){
   if(pr){ t.id=pr.id; t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
   else { t.id=val('fID').trim(); t.codigo_banco=val('fCodBanco').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
   t.pna=val('fPNA'); t.concesion=val('fConcesion').trim().replace(/\|/g,'/');
+  t.fecha_limite_requerida=val('fLimite'); t.holgura_dias=val('fHolgura').trim();
   t.historial = JSON.parse(JSON.stringify(historialActual));
   // geometría en curso sin cerrar
   if(!t.geomType && dibujoTemp.length){
@@ -554,7 +568,7 @@ function guardarTrazado(){
 }
 function limpiarForm(){
   editandoId=null; historialActual=[]; renderHist();
-  ['fNombre','fID','fCodBanco','fEstado','fFase','fMunicipio','fContrato','fConcesion'].forEach(id=>set(id,''));
+  ['fNombre','fID','fCodBanco','fEstado','fFase','fMunicipio','fContrato','fConcesion','fLimite','fHolgura'].forEach(id=>set(id,''));
   set('fProyecto',''); set('fPNA',''); autoLlenarPNA();
   document.getElementById('editHint').textContent='';
 }
@@ -682,6 +696,8 @@ function construirDescripcion(t){
     `tiempo_gestion: ${(p.tiempo_gestion||{}).texto||''}`
   ];
   if(t.concesion) partes.push(`concesion: ${t.concesion}`);
+  if(t.fecha_limite_requerida) partes.push(`fecha_limite_requerida: ${t.fecha_limite_requerida}`);
+  if(t.holgura_dias) partes.push(`holgura_dias: ${t.holgura_dias}`);
   let s = partes.join(' | ');
   s += ' | historial: ' + JSON.stringify(t.historial||[]);
   return s;
@@ -692,7 +708,7 @@ function construirDescripcion(t){
    =========================================================== */
 function parseDescripcion(desc){
   const out={};
-  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion'];
+  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
   campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
   const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
   if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }
