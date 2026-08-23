@@ -61,12 +61,12 @@
           </div>
         </div>
         <div class="card-body2">
-          <p class="mini mb-2">Aquí se registran una sola vez los datos de identidad del proyecto. El <b>ID lo asigna el sistema</b> automáticamente.
+          <p class="mini mb-2">Aquí se registran una sola vez los datos de identidad del proyecto. El <b>Código Banco</b> identifica cada proyecto (no se repite).
           Al crear un permiso se elige el proyecto de un menú y estos datos se copian solos (no se re-escriben).
           <b>🔒 La edición está protegida con clave de administrador.</b> Guarda el JSON exportado como <code>proyectos_db.json</code> en el repositorio para conservarlo.</p>
           <div class="table-responsive" style="max-height:220px; overflow:auto">
             <table class="table table-sm table-striped mb-2">
-              <thead class="table-dark"><tr><th>ID</th><th>Código Banco</th><th>Proyecto</th><th>Estado</th><th>Fase</th><th>Municipio</th><th>Contrato</th><th></th></tr></thead>
+              <thead class="table-dark"><tr><th>Código Banco</th><th>Proyecto</th><th>Estado</th><th>Fase</th><th>Municipio</th><th>Contrato</th><th></th></tr></thead>
               <tbody id="dbBody"></tbody>
             </table>
           </div>
@@ -111,19 +111,11 @@
         <div class="card-head"><span><span class="step-num">3</span>Datos del permiso (menús validados)</span></div>
         <div class="card-body2">
           <div class="mb-2">
-            <label class="req-label">Nombre del permiso/trazado *</label>
-            <div class="input-group input-group-sm">
-              <input id="fNombre" class="form-control form-control-sm" placeholder="Ej: 0001_PUZV_01">
-              <button class="btn epm-btn" onclick="sugerirNombre()" title="Sugerir nombre">↻</button>
-            </div>
-          </div>
-          <div class="mb-2">
             <label class="req-label">Proyecto (de la base) *</label>
             <select id="fProyecto" class="form-select form-select-sm" onchange="autoLlenarProyecto()"></select>
           </div>
           <div class="row g-1 mb-2">
-            <div class="col-4"><label class="req-label">ID</label><input id="fID" class="form-control form-control-sm auto-field" readonly></div>
-            <div class="col-8"><label class="req-label">Código Banco</label><input id="fCodBanco" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col-12"><label class="req-label">Código Banco</label><input id="fCodBanco" class="form-control form-control-sm auto-field" readonly></div>
           </div>
           <div class="row g-1 mb-2">
             <div class="col"><label class="req-label">Estado</label><input id="fEstado" class="form-control form-control-sm auto-field" readonly></div>
@@ -132,6 +124,14 @@
           <div class="row g-1 mb-2">
             <div class="col"><label class="req-label">Municipio</label><input id="fMunicipio" class="form-control form-control-sm auto-field" readonly></div>
             <div class="col"><label class="req-label">Contrato</label><input id="fContrato" class="form-control form-control-sm auto-field" readonly></div>
+          </div>
+          <div class="mb-2">
+            <label class="req-label">Frente * <span class="mini">(definición libre según la estrategia de ejecución del proyecto)</span></label>
+            <input id="fFrente" class="form-control form-control-sm" placeholder="Ej: Frente 1 · Tramo Norte · K0+000-K0+500…" oninput="actualizarNombre()">
+          </div>
+          <div class="mb-2">
+            <label class="req-label">Nombre del permiso/trazado <span class="mini">(automático: PNA_CódigoBanco_Frente)</span></label>
+            <input id="fNombre" class="form-control form-control-sm auto-field" readonly placeholder="Se genera solo al elegir PNA + proyecto + frente">
           </div>
           <hr class="my-2">
           <div class="mb-2">
@@ -161,16 +161,23 @@
             <p class="mini mb-2">Agrega una fila cada vez que el trámite avanza (se va acumulando todo el proceso).</p>
             <div class="table-responsive" style="max-height:170px; overflow:auto">
               <table class="table table-sm mb-2">
-                <thead class="table-secondary"><tr><th>#</th><th>Estado</th><th>Radicado</th><th>F. radic.</th><th>F. resp.</th><th>Obs.</th><th></th></tr></thead>
-                <tbody id="histBody"><tr><td colspan="7" class="text-center mini py-2">Sin filas de historial.</td></tr></tbody>
+                <thead class="table-secondary"><tr><th>#</th><th>Estado</th><th>Radicado</th><th>F.radic.</th><th>Rad.resp.</th><th>F.resp.</th><th>Obs.</th><th></th></tr></thead>
+                <tbody id="histBody"><tr><td colspan="8" class="text-center mini py-2">Sin filas de historial.</td></tr></tbody>
               </table>
             </div>
             <div class="row g-1">
-              <div class="col-12"><select id="hEstado" class="form-select form-select-sm" onchange="ajustarRadicado()"><option value="">— Estado de trámite —</option></select></div>
-              <div class="col-6"><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
-              <div class="col-6"><input id="hObs" class="form-control form-control-sm" placeholder="Observación"></div>
+              <div class="col-12"><select id="hEstado" class="form-select form-select-sm" onchange="ajustarCamposHist()"><option value="">— Estado de trámite —</option></select></div>
+              <div class="col-12" id="boxCulminado" style="display:none">
+                <div class="form-check mb-1">
+                  <input class="form-check-input" type="checkbox" id="hCulminado" onchange="ajustarCamposHist()">
+                  <label class="form-check-label mini" for="hCulminado">Este estado ya <b>culminó</b> (habilita fecha y radicado de respuesta)</label>
+                </div>
+              </div>
+              <div class="col-6"><label class="mini">Radicado (radicación)</label><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
+              <div class="col-6"><label class="mini">Radicado de respuesta</label><input id="hRadResp" class="form-control form-control-sm" placeholder="Radicado de respuesta"></div>
               <div class="col-6"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
               <div class="col-6"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
+              <div class="col-12"><input id="hObs" class="form-control form-control-sm" placeholder="Observación"></div>
               <div class="col-12 text-end mt-1"><button class="btn btn-sm epm-btn" onclick="addHist()">+ Agregar al historial</button></div>
             </div>
           </div>
@@ -228,22 +235,21 @@ const CATALOGO_SEED = {
     geometrias_permitidas: ["punto","linea","poligono"]
   },
   permisos: [
-    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado","Negado","Aprobado"], color:"#009300"},
-    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#0066CC"},
-    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#d56b00"},
-    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#8e44ad"},
-    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], color:"#e6a800"}
+    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado","Negado","Aprobado"], respuesta_en_estados:["Negado","Aprobado"], estados_culminables:[], color:"#009300"},
+    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#0066CC"},
+    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#d56b00"},
+    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#8e44ad"},
+    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#e6a800"}
   ]
 };
 
 /* ---------- Estado global ---------- */
 let CAT = CATALOGO_SEED;         // catálogo activo
-let DB = [];                     // base de proyectos: {id, codigo_banco, proyecto, estado, fase, municipio, contrato}
+let DB = [];                     // base de proyectos: {codigo_banco, proyecto, estado, fase, municipio, contrato}
 let trazados = [];               // permisos cargados en este KMZ
 let historialActual = [];        // historial del permiso que se está editando
 let editandoId = null;
-let idSeq = 1;                   // consecutivo para nombres de trazado
-let idProySeq = 1;              // consecutivo para ID de proyectos
+let idSeq = 1;                   // consecutivo interno (_uid) para identificar cada trazado en memoria
 
 /* ---------- Control de acceso (clave admin) ---------- */
 let dbUnlocked = false;
@@ -272,12 +278,9 @@ function aplicarLock(){
 }
 
 /* ---------- Persistencia (localStorage) ---------- */
-function guardarLocal(){ try{ localStorage.setItem('pna_db', JSON.stringify(DB)); localStorage.setItem('pna_idProy', String(idProySeq)); }catch(e){} }
+function guardarLocal(){ try{ localStorage.setItem('pna_db', JSON.stringify(DB)); }catch(e){} }
 function cargarLocal(){
-  try{
-    const d = localStorage.getItem('pna_db'); if(d) DB = JSON.parse(d);
-    const s = localStorage.getItem('pna_idProy'); if(s) idProySeq = parseInt(s)||1;
-  }catch(e){}
+  try{ const d = localStorage.getItem('pna_db'); if(d) DB = JSON.parse(d); }catch(e){}
 }
 
 /* ---------- Arranque ---------- */
@@ -292,8 +295,6 @@ async function init(){
     try{ const r = await fetch('proyectos_db.json',{cache:'no-store'}); if(r.ok){ DB = normalizeDB(await r.json()); } }catch(e){}
   }
   DB = normalizeDB(DB);
-  // Ajusta el consecutivo de ID de proyecto según lo que ya exista
-  DB.forEach(p=>{ const n=parseInt(p.id); if(!isNaN(n) && n>=idProySeq) idProySeq=n+1; });
   renderListasComunes();
   renderDB(); renderProyectoSelect(); renderPNASelect(); renderLista(); validar();
   aplicarLock();
@@ -302,14 +303,13 @@ async function init(){
 
 function normalizeDB(db){
   return (db||[]).map(r=>({
-    id: r.id!=null? String(r.id) : '',
     codigo_banco: r.codigo_banco||r['Código_Banco']||'',
     proyecto: r.proyecto||'',
     estado: r.estado||'',
     fase: r.fase||'',
     municipio: r.municipio||'',
     contrato: r.contrato||''
-  }));
+  })).filter(r=>r.codigo_banco);
 }
 
 /* ===========================================================
@@ -339,10 +339,10 @@ function permisoDe(pna){ return (CAT.permisos||[]).find(p=>p.pna===pna); }
    =========================================================== */
 function renderDB(){
   const b = document.getElementById('dbBody'); b.innerHTML='';
-  if(!DB.length){ b.innerHTML='<tr><td colspan="8" class="text-center mini py-2">Sin proyectos en la base.</td></tr>'; guardarLocal(); return; }
+  if(!DB.length){ b.innerHTML='<tr><td colspan="7" class="text-center mini py-2">Sin proyectos en la base.</td></tr>'; guardarLocal(); return; }
   DB.forEach((r,i)=>{
     b.innerHTML += `<tr>
-      <td><b>${esc(r.id)}</b></td><td>${esc(r.codigo_banco)}</td><td>${esc(r.proyecto)}</td><td>${esc(r.estado)}</td>
+      <td><b>${esc(r.codigo_banco)}</b></td><td>${esc(r.proyecto)}</td><td>${esc(r.estado)}</td>
       <td>${esc(r.fase)}</td><td>${esc(r.municipio)}</td><td>${esc(r.contrato)}</td>
       <td>${dbUnlocked ? `<button class="btn btn-sm btn-outline-danger py-0" onclick="delDB(${i})">🗑</button>` : '<span class="mini">🔒</span>'}</td></tr>`;
   });
@@ -352,18 +352,18 @@ function addDB(){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
   const cb=val('nCodBanco').trim(), p=val('nProy').trim(), es=val('nEstado'), fa=val('nFase'), mu=val('nMun'), co=val('nContrato').trim();
   if(!cb || !p){ alert('Código Banco y Proyecto son obligatorios.'); return; }
-  const id = String(idProySeq++).padStart(4,'0');
-  DB.push({id, codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co});
+  if(DB.find(x=>x.codigo_banco===cb)){ alert('Ya existe un proyecto con el Código Banco '+cb+'. El Código Banco debe ser único.'); return; }
+  DB.push({codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co});
   ['nCodBanco','nProy','nContrato'].forEach(x=>document.getElementById(x).value='');
   renderDB(); renderProyectoSelect();
 }
-function delDB(i){ if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; } if(confirm('¿Eliminar el proyecto '+DB[i].id+' de la base?')){ DB.splice(i,1); renderDB(); renderProyectoSelect(); } }
+function delDB(i){ if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; } if(confirm('¿Eliminar el proyecto '+DB[i].codigo_banco+' de la base?')){ DB.splice(i,1); renderDB(); renderProyectoSelect(); } }
 function exportarDB(){ descargar(JSON.stringify(DB,null,2), 'proyectos_db.json', 'application/json'); }
 function importarDB(){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; }
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
   inp.onchange=e=>{ const f=e.target.files[0]; const rd=new FileReader();
-    rd.onload=()=>{ try{ DB=normalizeDB(JSON.parse(rd.result)); idProySeq=1; DB.forEach(p=>{const n=parseInt(p.id); if(!isNaN(n)&&n>=idProySeq) idProySeq=n+1;}); renderDB(); renderProyectoSelect(); alert('Base cargada: '+DB.length+' proyectos.'); }catch(err){ alert('JSON inválido.'); } };
+    rd.onload=()=>{ try{ DB=normalizeDB(JSON.parse(rd.result)); renderDB(); renderProyectoSelect(); alert('Base cargada: '+DB.length+' proyectos.'); }catch(err){ alert('JSON inválido.'); } };
     rd.readAsText(f); };
   inp.click();
 }
@@ -371,13 +371,20 @@ function importarDB(){
 function renderProyectoSelect(){
   const s=document.getElementById('fProyecto'); const prev=s.value;
   s.innerHTML='<option value="">— Seleccione proyecto —</option>';
-  DB.forEach(r=> s.innerHTML+=`<option value="${esc(r.id)}">${esc(r.id)} · ${esc(r.codigo_banco)} — ${esc(r.proyecto)}</option>`);
+  DB.forEach(r=> s.innerHTML+=`<option value="${esc(r.codigo_banco)}">${esc(r.codigo_banco)}_${esc(r.proyecto)}</option>`);
   if(prev) s.value=prev; autoLlenarProyecto();
 }
 function autoLlenarProyecto(){
-  const id=val('fProyecto'); const r=DB.find(x=>x.id===id) || {};
-  set('fID', r.id||''); set('fCodBanco', r.codigo_banco||''); set('fEstado', r.estado||'');
+  const cb=val('fProyecto'); const r=DB.find(x=>x.codigo_banco===cb) || {};
+  set('fCodBanco', r.codigo_banco||''); set('fEstado', r.estado||'');
   set('fFase', r.fase||''); set('fMunicipio', r.municipio||''); set('fContrato', r.contrato||'');
+  actualizarNombre();
+}
+/* Nombre automático del permiso = PNA_CódigoBanco_Frente */
+function actualizarNombre(){
+  const pna=val('fPNA'), cb=val('fCodBanco'), fr=val('fFrente');
+  const partes=[pna,cb,fr].map(x=>String(x||'').trim()).filter(Boolean);
+  set('fNombre', partes.join('_').replace(/\s+/g,'_'));
 }
 
 /* ===========================================================
@@ -395,16 +402,33 @@ function autoLlenarPNA(){
   if(!p.requiere_concesion) set('fConcesion','');
   // estados de trámite disponibles para este PNA
   hEstado.innerHTML='<option value="">— Estado de trámite —</option>'+opts(p.estados_tramite);
-  ajustarRadicado();
+  ajustarCamposHist();
+  actualizarNombre();
 }
-/* El campo Radicado solo se habilita si el estado elegido lo permite para ese PNA */
-function ajustarRadicado(){
+/* Habilita/deshabilita los campos del historial según el estado y el PNA:
+   - Radicado (de radicación): solo en radicado_en_estados.
+   - Casilla "culminó": solo en estados_culminables (los 4 de gestión).
+   - F. respuesta y Radicado de respuesta: en respuesta_en_estados directamente,
+     o en un estado culminable SOLO si se marcó "culminó".               */
+function ajustarCamposHist(){
   const p=permisoDe(val('fPNA')); const est=val('hEstado');
-  const permite = p && est && (p.radicado_en_estados||[]).includes(est);
+  const inclui=(lista)=> p && est && (lista||[]).includes(est);
+  // Radicado de radicación
+  const permiteRad = inclui(p&&p.radicado_en_estados);
   const rad=document.getElementById('hRadicado');
-  rad.disabled = !permite;
-  rad.placeholder = permite ? 'Radicado' : 'Radicado (no aplica en este estado)';
-  if(!permite) rad.value='';
+  rad.disabled=!permiteRad; rad.placeholder = permiteRad?'Radicado':'Radicado (no aplica aquí)';
+  if(!permiteRad) rad.value='';
+  // Casilla culminó
+  const culminable = inclui(p&&p.estados_culminables);
+  document.getElementById('boxCulminado').style.display = culminable ? '' : 'none';
+  if(!culminable) document.getElementById('hCulminado').checked=false;
+  // F. respuesta + radicado de respuesta
+  const respDirecta = inclui(p&&p.respuesta_en_estados);
+  const permiteResp = respDirecta || (culminable && document.getElementById('hCulminado').checked);
+  const fResp=document.getElementById('hFResp'), rResp=document.getElementById('hRadResp');
+  fResp.disabled=!permiteResp; rResp.disabled=!permiteResp;
+  rResp.placeholder = permiteResp?'Radicado de respuesta':'(disponible al culminar / responder)';
+  if(!permiteResp){ fResp.value=''; rResp.value=''; }
 }
 
 /* ===========================================================
@@ -414,25 +438,34 @@ function addHist(){
   const est=val('hEstado');
   if(!val('fPNA')){ alert('Primero selecciona el tipo de permiso (PNA).'); return; }
   if(!est){ alert('Selecciona el estado de trámite.'); return; }
+  const culminado = document.getElementById('hCulminado').checked;
+  // Si el estado culminó, debe registrarse la fecha y el radicado de respuesta antes de avanzar.
+  if(culminado && (!val('hFResp') || !val('hRadResp').trim())){
+    if(!confirm('Marcaste el estado como CULMINADO pero falta la fecha o el radicado de respuesta. ¿Agregar de todos modos?')) return;
+  }
   historialActual.push({
     estado_tramite: est,
     radicado: val('hRadicado').trim().replace(/\|/g,'/'),
     fecha_radicacion: val('hFRad'),
+    culminado: culminado,
+    radicado_respuesta: val('hRadResp').trim().replace(/\|/g,'/'),
     fecha_respuesta: val('hFResp'),
     observacion: val('hObs').trim().replace(/\|/g,'/')
   });
-  ['hRadicado','hObs','hFRad','hFResp'].forEach(id=>set(id,'')); set('hEstado','');
-  ajustarRadicado(); renderHist();
+  ['hRadicado','hRadResp','hObs','hFRad','hFResp'].forEach(id=>set(id,'')); set('hEstado','');
+  document.getElementById('hCulminado').checked=false;
+  ajustarCamposHist(); renderHist();
 }
 function delHist(i){ historialActual.splice(i,1); renderHist(); }
 function renderHist(){
   const b=document.getElementById('histBody');
-  if(!historialActual.length){ b.innerHTML='<tr><td colspan="7" class="text-center mini py-2">Sin filas de historial.</td></tr>'; return; }
+  if(!historialActual.length){ b.innerHTML='<tr><td colspan="8" class="text-center mini py-2">Sin filas de historial.</td></tr>'; return; }
   b.innerHTML='';
   historialActual.forEach((h,i)=>{
+    const est = esc(h.estado_tramite) + (h.culminado?' <span class="badge badge-ok">✔ culminó</span>':'');
     b.innerHTML += `<tr>
-      <td>${i+1}</td><td>${esc(h.estado_tramite)}</td><td>${esc(h.radicado)||'—'}</td>
-      <td>${fmtDMY(h.fecha_radicacion)}</td><td>${fmtDMY(h.fecha_respuesta)}</td><td>${esc(h.observacion)||'—'}</td>
+      <td>${i+1}</td><td>${est}</td><td>${esc(h.radicado)||'—'}</td>
+      <td>${fmtDMY(h.fecha_radicacion)}</td><td>${esc(h.radicado_respuesta)||'—'}</td><td>${fmtDMY(h.fecha_respuesta)}</td><td>${esc(h.observacion)||'—'}</td>
       <td><button class="btn btn-sm btn-outline-danger py-0" onclick="delHist(${i})">🗑</button></td></tr>`;
   });
 }
@@ -473,11 +506,10 @@ function onMapDbl(e){
   else if(dibujoModo==='poligono' && dibujoTemp.length>=3){ finalizarGeom('Polygon', dibujoTemp.slice()); cancelarDibujo(); }
 }
 function finalizarGeom(tipo, coords){
-  const t = trazados.find(x=>x.id===editandoId);
+  const t = trazados.find(x=>x._uid===editandoId);
   if(t){ t.geomType=tipo; t.coords=coords; }  // adjunta al permiso en edición
   else { // crea uno nuevo en edición
-    const nt = nuevoTrazadoVacio(); nt.geomType=tipo; nt.coords=coords; trazados.push(nt); editandoId=nt.id;
-    // sincroniza formulario con lo poco que haya
+    const nt = nuevoTrazadoVacio(); nt.geomType=tipo; nt.coords=coords; trazados.push(nt); editandoId=nt._uid;
   }
   renderLista(); dibujarTodo(); validar();
   document.getElementById('editHint').textContent='Geometría lista ('+tipoLegible(tipo)+'). Completa los datos y presiona "Guardar / Actualizar".';
@@ -514,7 +546,7 @@ async function importarGeom(file){
     else return;
     const t=nuevoTrazadoVacio();
     t.nombre=nombre; t.geomType=geomType; t.coords=coords;
-    t.id=meta.id||''; t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||'';
+    t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||''; t.frente=meta.frente||'';
     t.estado=meta.estado||''; t.fase=meta.fase||''; t.municipio=meta.municipio||''; t.contrato=meta.contrato||'';
     t.pna=meta.pna||''; t.concesion=meta.concesion||'';
     t.fecha_limite_requerida=meta.fecha_limite_requerida||''; t.holgura_dias=meta.holgura_dias||'';
@@ -529,29 +561,31 @@ async function importarGeom(file){
    FORMULARIO ↔ TRAZADO
    =========================================================== */
 function nuevoTrazadoVacio(){
-  return {id:'', nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', fecha_limite_requerida:'', holgura_dias:'', historial:[], _uid:idSeq++};
+  return {nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', frente:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', fecha_limite_requerida:'', holgura_dias:'', historial:[], _uid:idSeq++};
 }
 function cargarEnForm(t){
   editandoId=t._uid;
-  set('fNombre',t.nombre);
-  // intenta seleccionar el proyecto por ID
-  if(t.id && DB.find(x=>x.id===t.id)){ set('fProyecto',t.id); autoLlenarProyecto(); }
-  else { set('fProyecto',''); set('fID',t.id); set('fCodBanco',t.codigo_banco); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
+  // intenta seleccionar el proyecto por Código Banco
+  if(t.codigo_banco && DB.find(x=>x.codigo_banco===t.codigo_banco)){ set('fProyecto',t.codigo_banco); autoLlenarProyecto(); }
+  else { set('fProyecto',''); set('fCodBanco',t.codigo_banco); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
+  set('fFrente',t.frente||'');
   set('fPNA',t.pna); autoLlenarPNA(); set('fConcesion',t.concesion);
   set('fLimite',t.fecha_limite_requerida||''); set('fHolgura',t.holgura_dias||'');
+  actualizarNombre();
   historialActual = JSON.parse(JSON.stringify(t.historial||[])); renderHist();
   document.getElementById('editHint').textContent='Editando: '+(t.nombre||'(sin nombre)');
 }
 function guardarTrazado(){
   let t = trazados.find(x=>x._uid===editandoId);
   if(!t){ t=nuevoTrazadoVacio(); trazados.push(t); editandoId=t._uid; }
-  t.nombre=val('fNombre').trim();
+  t.frente=val('fFrente').trim().replace(/\|/g,'/');
   // Datos de identidad: si se eligió un proyecto de la base, se copian de allí;
   // si no (p. ej. permiso importado sin proyecto en la base), se conservan los que ya trae.
-  const pr=DB.find(x=>x.id===val('fProyecto'));
-  if(pr){ t.id=pr.id; t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
-  else { t.id=val('fID').trim(); t.codigo_banco=val('fCodBanco').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
+  const pr=DB.find(x=>x.codigo_banco===val('fProyecto'));
+  if(pr){ t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
+  else { t.codigo_banco=val('fCodBanco').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
   t.pna=val('fPNA'); t.concesion=val('fConcesion').trim().replace(/\|/g,'/');
+  actualizarNombre(); t.nombre=val('fNombre').trim();
   t.fecha_limite_requerida=val('fLimite'); t.holgura_dias=val('fHolgura').trim();
   t.historial = JSON.parse(JSON.stringify(historialActual));
   // geometría en curso sin cerrar
@@ -568,14 +602,9 @@ function guardarTrazado(){
 }
 function limpiarForm(){
   editandoId=null; historialActual=[]; renderHist();
-  ['fNombre','fID','fCodBanco','fEstado','fFase','fMunicipio','fContrato','fConcesion','fLimite','fHolgura'].forEach(id=>set(id,''));
+  ['fNombre','fCodBanco','fEstado','fFase','fMunicipio','fContrato','fFrente','fConcesion','fLimite','fHolgura'].forEach(id=>set(id,''));
   set('fProyecto',''); set('fPNA',''); autoLlenarPNA();
   document.getElementById('editHint').textContent='';
-}
-function sugerirNombre(){
-  const cb=val('fCodBanco')||'PNA'; const pna=val('fPNA')||'PERM';
-  let max=0; trazados.forEach(t=>{ const m=(t.nombre||'').match(/(\d+)\s*$/); if(m) max=Math.max(max,parseInt(m[1])); });
-  set('fNombre', (cb+'_'+pna+'_'+String(max+1).padStart(2,'0')).replace(/\s+/g,'_'));
 }
 function editar(uid){ const t=trazados.find(x=>x._uid===uid); if(t){ cargarEnForm(t); window.scrollTo({top:0,behavior:'smooth'}); } }
 function duplicar(uid){
@@ -592,8 +621,8 @@ function borrar(uid){ trazados=trazados.filter(x=>x._uid!==uid); if(editandoId==
    =========================================================== */
 function faltantes(t){
   const f=[];
-  if(!t.nombre) f.push('nombre');
-  if(!t.id && !t.proyecto) f.push('proyecto');
+  if(!t.codigo_banco && !t.proyecto) f.push('proyecto');
+  if(!t.frente) f.push('frente');
   if(!t.pna) f.push('PNA');
   if(!t.geomType) f.push('geometría');
   const p=permisoDe(t.pna);
@@ -684,9 +713,9 @@ ${body}</Document></kml>`;
 function construirDescripcion(t){
   const p=permisoDe(t.pna)||{};
   const partes=[
-    `id: ${t.id}`,
     `codigo_banco: ${t.codigo_banco}`,
     `proyecto: ${t.proyecto}`,
+    `frente: ${t.frente||''}`,
     `estado: ${t.estado}`,
     `fase: ${t.fase}`,
     `municipio: ${t.municipio}`,
@@ -708,7 +737,7 @@ function construirDescripcion(t){
    =========================================================== */
 function parseDescripcion(desc){
   const out={};
-  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
+  const campos=['codigo_banco','proyecto','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
   campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
   const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
   if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }

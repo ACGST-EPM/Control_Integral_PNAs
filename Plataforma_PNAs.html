@@ -91,7 +91,7 @@
             <table id="tabla" class="table table-sm table-striped table-hover" style="width:100%">
               <thead class="table-dark">
                 <tr>
-                  <th>ID</th><th>Proyecto</th><th>Cód. Banco</th><th>PNA</th><th>Autoridad</th><th>Municipio</th>
+                  <th>Frente</th><th>Proyecto</th><th>Cód. Banco</th><th>PNA</th><th>Autoridad</th><th>Municipio</th>
                   <th>Estado actual</th><th>Últ. radicado</th><th>F. límite</th>
                   <th>Semáforo gestión</th><th>Semáforo riesgo</th><th></th>
                 </tr>
@@ -224,7 +224,7 @@ function calcular(p){
 /* ================= PARSEO DE KMZ/KML ================= */
 function parseDescripcion(desc){
   const out={};
-  const campos=['id','codigo_banco','proyecto','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
+  const campos=['codigo_banco','proyecto','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
   campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
   const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
   if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }
@@ -320,7 +320,7 @@ function leyenda(){
 /* ================= TABLA + FILTROS ================= */
 function fila(p){
   return `<tr data-nombre="${esc(p.nombre)}">
-    <td>${esc(p.id||'—')}</td><td>${esc(p.proyecto||'—')}</td><td>${esc(p.codigo_banco||'—')}</td>
+    <td>${esc(p.frente||'—')}</td><td>${esc(p.proyecto||'—')}</td><td>${esc(p.codigo_banco||'—')}</td>
     <td>${esc(p.pna||'—')}</td><td>${esc(p._autoridad||'—')}</td><td>${esc(p.municipio||'—')}</td>
     <td>${esc(p._estadoActual)}</td><td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
     <td class="sem ${p._semG.clase}">${p._semG.txt}</td>
@@ -377,7 +377,7 @@ function verHist(nombre){
   const p=PERMISOS.find(x=>x.nombre===nombre); if(!p) return;
   document.getElementById('mhTitulo').textContent='Historial — '+p.nombre+' ('+(p.pna||'')+')';
   let head=`<div class="mb-2 mini">
-    <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Autoridad:</b> ${esc(p._autoridad||'—')} &nbsp;|&nbsp;
+    <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Frente:</b> ${esc(p.frente||'—')} &nbsp;|&nbsp; <b>Autoridad:</b> ${esc(p._autoridad||'—')} &nbsp;|&nbsp;
     <b>Municipio:</b> ${esc(p.municipio||'—')} &nbsp;|&nbsp; <b>F. límite:</b> ${fmtDMY(p.fecha_limite_requerida)}
     ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
   </div>
@@ -386,8 +386,8 @@ function verHist(nombre){
   const hist=p.historial||[];
   let tl = hist.length ? '<div class="tl">'+hist.map(h=>`
     <div class="tl-item">
-      <div class="tl-estado">${esc(h.estado_tramite||'')}</div>
-      <div class="mini">Radicado: ${esc(h.radicado||'—')} · Radicación: ${fmtDMY(h.fecha_radicacion)} · Respuesta: ${fmtDMY(h.fecha_respuesta)}</div>
+      <div class="tl-estado">${esc(h.estado_tramite||'')} ${h.culminado?'<span class="sem sem-verde" style="font-size:.7rem">✔ culminó</span>':''}</div>
+      <div class="mini">Radicado: ${esc(h.radicado||'—')} · Radicación: ${fmtDMY(h.fecha_radicacion)} · Rad. respuesta: ${esc(h.radicado_respuesta||'—')} · F. respuesta: ${fmtDMY(h.fecha_respuesta)}</div>
       ${h.observacion?('<div style="font-size:.8rem">'+esc(h.observacion)+'</div>'):''}
     </div>`).join('')+'</div>' : '<i class="mini">Sin historial registrado.</i>';
   document.getElementById('mhBody').innerHTML=head+tl;
