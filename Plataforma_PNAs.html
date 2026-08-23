@@ -50,6 +50,7 @@
     <div class="flex-grow-1">
       <b>Fuente de datos:</b> <span id="fuente">buscando KMZ en el repositorio…</span>
     </div>
+    <button class="btn btn-sm epm-btn-green mb-0" onclick="recargarRepo()">🔄 Recargar del repositorio</button>
     <label class="btn btn-sm epm-btn mb-0">📂 Cargar KMZ (uno o varios)
       <input type="file" accept=".kmz,.kml" multiple onchange="cargarArchivos(this.files)" hidden></label>
     <a href="Generador_KMZ_PNAs.html" target="_blank" class="btn btn-sm epm-btn-green">🗂️ Abrir Generador</a>
@@ -275,22 +276,29 @@ async function cargarDesdeRepo(){
     if(host.indexOf('github.io')===-1){ document.getElementById('fuente').textContent='Abre desde GitHub Pages o usa "Cargar KMZ" para probar en local.'; return; }
     const owner=host.split('.')[0];
     const repo=window.location.pathname.split('/').filter(Boolean)[0];
-    const rutas=['', '01_KMZ_Entrada'];
+    const rutas=['01_KMZ_Entrada', ''];
+    const cb='?nocache='+Date.now();   // evita caché para traer siempre la última versión tras el push
     let urls=[];
     for(const ruta of rutas){
-      const api='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+ruta;
+      const api='https://api.github.com/repos/'+owner+'/'+repo+'/contents/'+ruta+cb;
       try{
-        const r=await fetch(api); if(!r.ok) continue;
+        const r=await fetch(api,{cache:'no-store'}); if(!r.ok) continue;
         const lista=await r.json();
         if(Array.isArray(lista)) lista.forEach(x=>{ if(x.type==='file' && /\.kmz$/i.test(x.name)) urls.push(x.download_url); });
       }catch(e){}
     }
-    if(!urls.length){ document.getElementById('fuente').textContent='No se encontraron KMZ en el repositorio. Usa "Cargar KMZ" para probar.'; return; }
-    let tot=0;
-    for(const u of urls){ try{ const b=await (await fetch(u)).blob(); const f=new File([b], u.split('/').pop()); tot+=await parsearArchivo(f); }catch(e){} }
-    document.getElementById('fuente').textContent=PERMISOS.length+' permiso(s) cargado(s) desde el repositorio.';
+    if(!urls.length){ document.getElementById('fuente').textContent='No se encontraron KMZ en el repositorio (carpeta 01_KMZ_Entrada). Usa "Cargar KMZ" para probar.'; return; }
+    for(const u of urls){ try{ const b=await (await fetch(u+cb,{cache:'no-store'})).blob(); const f=new File([b], u.split('/').pop()); await parsearArchivo(f); }catch(e){} }
+    const ahora=new Date().toLocaleString('es-CO');
+    document.getElementById('fuente').innerHTML=PERMISOS.length+' permiso(s) cargado(s) desde el repositorio · <span class="mini">última actualización: '+ahora+'</span>';
     refrescarTodo();
   }catch(e){ document.getElementById('fuente').textContent='No se pudo leer el repositorio. Usa "Cargar KMZ".'; }
+}
+/* Botón: vuelve a leer los KMZ del repositorio (tras un commit + push) sin recargar la página */
+function recargarRepo(){
+  PERMISOS=[];
+  document.getElementById('fuente').textContent='recargando del repositorio…';
+  cargarDesdeRepo();
 }
 
 /* ================= MAPA ================= */
