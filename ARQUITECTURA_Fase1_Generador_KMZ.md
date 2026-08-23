@@ -145,9 +145,11 @@ Cambios aplicados al generador y reflejados en el dashboard y el catálogo:
 2. **Nuevo campo `Frente`** (numeral 3, datos del permiso): definición **libre** según la estrategia de ejecución de cada proyecto.
 3. **Nombre del permiso automático:** `PNA_CódigoBanco_Frente` (campo de solo lectura, se genera solo).
 4. **Selección de proyecto** se muestra como **`CódigoBanco_Proyecto`**.
-5. **Disponibilidad de `Fecha_Respuesta` y `Radicado_Respuesta`** (nuevo) según el estado:
-   - **PMT_Diseño:** cuando el estado es `Negado` o `Aprobado` (`respuesta_en_estados`).
-   - **PUZV, Cierre_Via, PUOI-IVCF, PIV:** cuando el estado es `Observado` o `Resolución_Aprobatoria`; y para los estados de gestión (`Gestión_Pólizas`, `Gestión_Acta_Inicio`, `Gestión_Suspensión`, `Gestión_Reinicio`, listados en `estados_culminables`), **solo al marcar la casilla "culminó"**, momento en que se habilita registrar la fecha y el radicado de respuesta antes de pasar al siguiente estado (trazabilidad completa).
+5. **Dos radicados distintos según quién actúa:**
+   - **`Radicado` (radicación del usuario):** solo en el estado **`Radicado`** (`radicado_en_estados` = `["Radicado"]` para todos los permisos). Es la radicación que hace el usuario.
+   - **`Radicado_Respuesta` + `Fecha_Respuesta` (pronunciamiento de la autoridad):** en los estados donde responde la autoridad. En esos estados **no** se pide radicado de radicación, solo el de respuesta:
+     - **PMT_Diseño:** `Negado`, `Aprobado` (`respuesta_en_estados`).
+     - **PUZV, Cierre_Via, PUOI-IVCF, PIV:** `Observado`, `Resolución_Aprobatoria`; y para los estados de gestión (`Gestión_Pólizas`, `Gestión_Acta_Inicio`, `Gestión_Suspensión`, `Gestión_Reinicio`, en `estados_culminables`), **solo al marcar la casilla "culminó"**, momento en que se habilita registrar fecha y radicado de respuesta antes de pasar al siguiente estado (trazabilidad completa).
 6. **Historial** ahora guarda por fila: `estado_tramite`, `radicado`, `fecha_radicacion`, **`culminado`** (bool), **`radicado_respuesta`**, `fecha_respuesta`, `observacion`.
 7. **Catálogo** (`tipos_permiso.json`) amplía cada permiso con `respuesta_en_estados` y `estados_culminables` (siguen siendo datos por tipo de permiso → fuente única de verdad).
 

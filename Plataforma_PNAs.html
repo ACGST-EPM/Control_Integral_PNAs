@@ -177,7 +177,7 @@ function calcular(p){
   // primer "Radicado"
   const rad = hist.find(h=> (h.estado_tramite||'')==='Radicado');
   const fRad = rad ? toDate(rad.fecha_radicacion || rad.fecha_respuesta) : null;
-  const ultRad = [...hist].reverse().find(h=>h.radicado);
+  const ultRad = [...hist].reverse().find(h=>h.radicado_respuesta || h.radicado);
   const cerrado = (perm.estados_cierre||[]).some(alcanzo);
 
   // ---- Semáforo de gestión (reloj normativo) ----
@@ -215,7 +215,7 @@ function calcular(p){
   }
 
   p._estadoActual = estadoActual || '—';
-  p._ultRadicado  = ultRad ? ultRad.radicado : '';
+  p._ultRadicado  = ultRad ? (ultRad.radicado_respuesta || ultRad.radicado) : '';
   p._semG = semG; p._semR = semR;
   p._autoridad = perm.autoridad || p.autoridad || '';
   p._color = perm.color || '#009300';
