@@ -204,8 +204,17 @@
   <!-- PASO 4: LISTA DE TRAZADOS -->
   <div class="card-box">
     <div class="card-head"><span><span class="step-num">4</span>Permisos en este KMZ</span>
-      <span class="mini text-white">Total: <span id="cnt">0</span></span></div>
+      <span><span class="mini text-white me-2">Total: <span id="cnt">0</span></span>
+      <button class="btn btn-sm btn-light" onclick="nuevaSesion()" title="Vaciar los permisos cargados en esta sesión">🧹 Nueva sesión</button></span></div>
     <div class="card-body2">
+      <div class="alert alert-light border mb-2 py-2" style="border-left:4px solid var(--epm-lima)!important; font-size:.78rem">
+        <b>Para actualizar un permiso o agregar uno nuevo a un proyecto existente:</b>
+        1) Importa el KMZ actual del proyecto (Paso 2) → trae todos sus permisos con su historial.
+        2) Selecciona el permiso, agrega la <b>nueva fila de historial</b> (el avance) o crea un permiso nuevo.
+        3) Exporta → descarga <code>&lt;CódigoBanco&gt;_&lt;Proyecto&gt;.kmz</code> con todo acumulado.
+        4) Guárdalo en <code>01_KMZ_Entrada</code> reemplazando el anterior y haz commit + push.
+        <span class="text-success">Tu sesión de trabajo se autoguarda en este navegador como respaldo.</span>
+      </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead class="table-dark"><tr>
@@ -235,11 +244,11 @@ const CATALOGO_SEED = {
     geometrias_permitidas: ["punto","linea","poligono"]
   },
   permisos: [
-    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado","Negado","Aprobado"], respuesta_en_estados:["Negado","Aprobado"], estados_culminables:[], color:"#009300"},
-    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#0066CC"},
-    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#d56b00"},
-    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#8e44ad"},
-    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado","Observado","Resolución_Aprobatoria"], respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#e6a800"}
+    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado"], respuesta_en_estados:["Negado","Aprobado"], estados_culminables:[], color:"#009300"},
+    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#0066CC"},
+    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#d56b00"},
+    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#8e44ad"},
+    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#e6a800"}
   ]
 };
 
@@ -282,6 +291,18 @@ function guardarLocal(){ try{ localStorage.setItem('pna_db', JSON.stringify(DB))
 function cargarLocal(){
   try{ const d = localStorage.getItem('pna_db'); if(d) DB = JSON.parse(d); }catch(e){}
 }
+/* Autoguardado de la SESIÓN de trabajo (permisos cargados), para no perder
+   el historial acumulado si se cierra el navegador por accidente. El KMZ sigue
+   siendo el almacén oficial y portable; esto es solo una red de seguridad local. */
+function guardarTrazadosLocal(){ try{ localStorage.setItem('pna_trazados', JSON.stringify(trazados)); }catch(e){} }
+function cargarTrazadosLocal(){
+  try{ const d=localStorage.getItem('pna_trazados'); if(d){ trazados=JSON.parse(d)||[]; trazados.forEach(t=>{ if(t._uid>=idSeq) idSeq=t._uid+1; }); } }catch(e){}
+}
+function nuevaSesion(){
+  if(!trazados.length || confirm('Esto limpia los permisos cargados en esta sesión de trabajo.\nNo borra tus KMZ ya exportados ni la base de proyectos. ¿Continuar?')){
+    trazados=[]; limpiarForm(); renderLista(); dibujarTodo(); validar(); guardarTrazadosLocal();
+  }
+}
 
 /* ---------- Arranque ---------- */
 async function init(){
@@ -295,6 +316,7 @@ async function init(){
     try{ const r = await fetch('proyectos_db.json',{cache:'no-store'}); if(r.ok){ DB = normalizeDB(await r.json()); } }catch(e){}
   }
   DB = normalizeDB(DB);
+  cargarTrazadosLocal();   // restaura la sesión de trabajo anterior (si existía)
   renderListasComunes();
   renderDB(); renderProyectoSelect(); renderPNASelect(); renderLista(); validar();
   aplicarLock();
@@ -416,7 +438,7 @@ function ajustarCamposHist(){
   // Radicado de radicación
   const permiteRad = inclui(p&&p.radicado_en_estados);
   const rad=document.getElementById('hRadicado');
-  rad.disabled=!permiteRad; rad.placeholder = permiteRad?'Radicado':'Radicado (no aplica aquí)';
+  rad.disabled=!permiteRad; rad.placeholder = permiteRad?'Radicado (radicación del usuario)':'No aplica → usa Radicado de respuesta';
   if(!permiteRad) rad.value='';
   // Casilla culminó
   const culminable = inclui(p&&p.estados_culminables);
@@ -631,6 +653,7 @@ function faltantes(t){
   return f;
 }
 function renderLista(){
+  guardarTrazadosLocal();   // autoguardado de la sesión de trabajo
   const b=document.getElementById('listaBody'); document.getElementById('cnt').textContent=trazados.length;
   if(!trazados.length){ b.innerHTML='<tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr>'; return; }
   b.innerHTML='';
@@ -682,8 +705,13 @@ async function exportarKMZ(){
   if(!trazados.length){ alert('No hay permisos para exportar.'); return; }
   const malos=trazados.filter(t=>faltantes(t).length);
   if(malos.length && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Exportar de todos modos?')) return;
-  const cb=(trazados.find(t=>t.codigo_banco)||{}).codigo_banco || 'PNAs';
-  const nombreArchivo=(cb+'_PNAs').replace(/[^A-Za-z0-9_\-]/g,'_')+'.kmz';
+  // Un KMZ por proyecto: el archivo se nombra con el Código Banco.
+  const codigos=[...new Set(trazados.map(t=>t.codigo_banco).filter(Boolean))];
+  if(codigos.length>1 && !confirm('Hay permisos de varios proyectos ('+codigos.join(', ')+') en esta sesión.\nLo recomendable es UN KMZ por proyecto. ¿Exportar todos juntos de todos modos?\n(Si prefieres, usa "Nueva sesión" y trabaja un proyecto a la vez.)')) return;
+  const cb=codigos[0] || 'PNAs';
+  const proy=(trazados.find(t=>t.codigo_banco===cb)||{}).proyecto || '';
+  const base = proy ? (cb+'_'+proy) : cb;   // nombre = CódigoBanco_Proyecto (más reconocible)
+  const nombreArchivo=(base).replace(/[^A-Za-z0-9_\-]/g,'_')+'.kmz';
   const kml=construirKML(nombreArchivo);
   const zip=new JSZip(); zip.file('doc.kml', kml);
   const blob=await zip.generateAsync({type:'blob', mimeType:'application/vnd.google-earth.kmz'});
