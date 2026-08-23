@@ -96,6 +96,47 @@ Cada permiso guarda una **lista de filas de historial** (una bitácora que crece
 
 ---
 
+## 4.1 Reglas de plazos y semántica de estados (para la Fase 2 — pendiente de construir)
+
+> Decisiones tomadas en sesión para el diseño del **semáforo** y la **línea de tiempo** del dashboard. Algunas quedan marcadas como *(por confirmar)*.
+
+### Los dos "relojes" a contrastar
+1. **Reloj normativo (autoridad):** cuánto tarda el permiso = `tiempo_gestion` del catálogo (15 días hábiles / 3 / 12 meses).
+2. **Reloj del proyecto (cronograma):** **fecha límite** para tener el permiso sin afectar la contratación/ejecución de la obra → nuevo dato **`Fecha_Límite_Requerida`**.
+
+### Nuevo campo `Fecha_Límite_Requerida`
+- **Una por permiso** (cada permiso se necesita en un momento distinto del cronograma).
+- Es **dato del proyecto/permiso**, NO del catálogo (no se toca `tipos_permiso.json`).
+- **No** se enlaza aún a hitos del cronograma: primero se estandariza la gestión de permisos; cuando los programadores estandaricen sus cronogramas, se enlazará. (Fase futura.)
+
+### Cálculo propuesto (planeación hacia atrás)
+- **Última fecha viable para radicar** = `Fecha_Límite_Requerida` − `tiempo_gestion` (− holgura opcional).
+- **Dos semáforos** juntos:
+  - **De gestión:** ¿el trámite avanza dentro del plazo de la autoridad?
+  - **De riesgo al proyecto:** dado lo avanzado y lo que falta, ¿llegará antes de la `Fecha_Límite_Requerida`?
+
+### Semántica de los estados de trámite (PUZV, Cierre_Via, PUOI-IVCF, PIV)
+Los 8 estados ya están completos en el generador. Su significado para el semáforo/línea de tiempo:
+
+| Estado | Significado |
+|---|---|
+| Radicado | Inicia el trámite ante la autoridad (arranca el reloj normativo) |
+| Observado | La autoridad pide ajustes |
+| Revisión_Ajustes | Se atienden las observaciones |
+| Resolución_Aprobatoria | **Permiso otorgado** (en mano) |
+| Gestión_Pólizas | Trámite de pólizas posterior a la aprobación |
+| **Gestión_Acta_Inicio** | **Detona el inicio de la ejecución** bajo el permiso (se "activa") |
+| Gestión_Suspensión | **Opcional** — pausa (permiso listo pero aún no se ejecuta / corrimiento de cronograma) |
+| Gestión_Reinicio | **Opcional** — reactivación tras una suspensión |
+
+- **PMT_Diseño** mantiene sus 3 estados: Radicado · Negado · Aprobado.
+- *(Por confirmar)* La `Fecha_Límite_Requerida` se compara, por defecto, contra alcanzar **Gestión_Acta_Inicio** (poder iniciar obra), no solo contra Resolución_Aprobatoria.
+- *(Por confirmar)* Fecha de arranque del reloj normativo = **Fecha_radicación del primer "Radicado"**.
+- *(Por confirmar)* Estados que "cierran" el trámite y detienen el reloj de gestión: PMT_Diseño → Aprobado/Negado; los demás → Resolución_Aprobatoria (o Gestión_Acta_Inicio, según lo anterior).
+- **Nota de ortografía canónica:** los estados se guardan con tildes exactamente como en el catálogo (`Revisión_Ajustes`, `Resolución_Aprobatoria`, `Gestión_Pólizas`, `Gestión_Acta_Inicio`, `Gestión_Suspensión`, `Gestión_Reinicio`) para que el dashboard los compare sin errores.
+
+---
+
 ## 5. Formato del KMZ (borrador — se cierra al construir el generador)
 
 Cada trazado (`<Placemark>`) llevará en su `<description>` los datos de identidad + PNA, y el **historial serializado**. Propuesta:
