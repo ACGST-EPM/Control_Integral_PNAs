@@ -302,15 +302,19 @@ function calcular(p){
     else                  semR = {clase:'sem-rojo',     txt:'Vencido límite ('+Math.abs(dh)+' d.háb.)'};
   }
 
-  // ---- Itinerancia (titilar en el mapa): SOLO trámites sin radicar ----
-  // Mide días hábiles desde hoy hasta la FECHA MÁXIMA para iniciar la radicación
-  // (= límite - plazo de gestión - holgura). Mismos umbrales del riesgo.
-  let itin = {activa:false, nivel:'verde', dh:null};
-  if(radicaciones===0 && limite && tg){
-    const fechaMaxRad = addDays(restarPlazo(limite, tg), -holg);
-    const dhr = diasHabilesEntre(hoy(), fechaMaxRad);
-    const nivel = (dhr>=uVerde) ? 'verde' : (dhr>=uAmar ? 'amarillo' : 'rojo');
-    itin = {activa:true, nivel:nivel, dh:dhr};
+  // ---- Itinerancia (titilar en el mapa) ----
+  // Cubre todo el ciclo mientras el permiso NO esté listo/activado:
+  //  - Sin radicar:   días hábiles a la FECHA MÁXIMA de radicación (= límite - plazo - holgura).
+  //  - En proceso:    días hábiles al LÍMITE (misma medida del semáforo de riesgo).
+  //  - Listo/Activado: sin itinerancia.
+  // Umbrales (uVerde/uAmar) iguales al riesgo: ≠PMT 45/30 · PMT 30/20.
+  let itin = {activa:false, nivel:'verde', dh:null, base:''};
+  if(!listo && limite && tg){
+    let dhi, base;
+    if(radicaciones===0){ dhi = diasHabilesEntre(hoy(), addDays(restarPlazo(limite, tg), -holg)); base='radicación'; }
+    else                { dhi = diasHabilesEntre(hoy(), addDays(limite, -holg));                 base='límite'; }
+    const nivel = (dhi>=uVerde) ? 'verde' : (dhi>=uAmar ? 'amarillo' : 'rojo');
+    itin = {activa:true, nivel:nivel, dh:dhi, base:base};
   }
   p._itinerancia = itin;
 
@@ -436,7 +440,7 @@ function dibujarMapa(lista){
     if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
     else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:2,fillOpacity:.25});
     else lyr=L.polyline(p.coords,{color:col,weight:5});
-    const itInfo = (p._itinerancia && p._itinerancia.activa) ? ('<br><span style="color:'+ITIN_COL[p._itinerancia.nivel]+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. para radicar)</span>') : '';
+    const itInfo = (p._itinerancia && p._itinerancia.activa) ? ('<br><span style="color:'+ITIN_COL[p._itinerancia.nivel]+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. '+(p._itinerancia.base==='radicación'?'para radicar':'al límite')+')</span>') : '';
     lyr.bindPopup('<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual)+itInfo);
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
   });
@@ -453,7 +457,7 @@ function leyenda(){
     + `<span><i style="background:#E53935"></i>Rápida</span>`;
   box.innerHTML = `<div class="mb-1"><b class="mini text-success">Tipo de permiso (color):</b> ${cols}</div>`
     + `<div class="mb-1"><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`
-    + `<div><b class="mini text-success">Itinerancia (contorno titilante, sin radicar):</b> ${itin}</div>`;
+    + `<div><b class="mini text-success">Itinerancia (contorno titilante · urgencia del trámite):</b> ${itin}</div>`;
 }
 /* Círculo de color para acompañar el texto del semáforo */
 function dot(clase){
