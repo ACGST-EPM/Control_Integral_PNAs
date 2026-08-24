@@ -244,11 +244,11 @@ const CATALOGO_SEED = {
     geometrias_permitidas: ["punto","linea","poligono"]
   },
   permisos: [
-    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado"], respuesta_en_estados:["Negado","Aprobado"], estados_culminables:[], color:"#2E7D32"},
-    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#1565C0"},
-    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#00897B"},
-    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#6A1B9A"},
-    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#C2185B"}
+    {pna:"PMT_Diseño", nombre_completo:"Plan de Manejo de Tránsito en etapa de Diseño", autoridad:"Municipio", autoridad_detalle:"Secretaría de Movilidad de cada municipio", requiere_concesion:false, tiempo_gestion:{texto:"15 días hábiles"}, estados_tramite:["No iniciado","Radicado","Negado","Aprobado"], radicado_en_estados:["Radicado"], respuesta_en_estados:["Negado","Aprobado"], estados_culminables:[], color:"#2E7D32"},
+    {pna:"PUZV", nombre_completo:"Permiso de Uso de Zona de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["No iniciado","Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#1565C0"},
+    {pna:"Cierre_Via", nombre_completo:"Permiso de Cierre de Vía", autoridad:"INVIAS", autoridad_detalle:"Instituto Nacional de Vías", requiere_concesion:false, tiempo_gestion:{texto:"3 meses"}, estados_tramite:["No iniciado","Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#00897B"},
+    {pna:"PUOI-IVCF", nombre_completo:"Permiso de Uso, Ocupación e Intervención de Infraestructura Carretera Concesionada y Férrea", autoridad:"ANI", autoridad_detalle:"Agencia Nacional de Infraestructura", requiere_concesion:true, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["No iniciado","Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#6A1B9A"},
+    {pna:"PIV", nombre_completo:"Permiso de Intervención Vial", autoridad:"Gobernación", autoridad_detalle:"Gobernación de Antioquia", requiere_concesion:false, tiempo_gestion:{texto:"12 meses"}, estados_tramite:["No iniciado","Radicado","Observado","Revisión_Ajustes","Resolución_Aprobatoria","Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], radicado_en_estados:["Radicado"],respuesta_en_estados:["Observado","Resolución_Aprobatoria"], estados_culminables:["Gestión_Pólizas","Gestión_Acta_Inicio","Gestión_Suspensión","Gestión_Reinicio"], color:"#C2185B"}
   ]
 };
 
@@ -383,20 +383,36 @@ function renderDB(){
     b.innerHTML += `<tr>
       <td><b>${esc(r.codigo_banco)}</b></td><td>${esc(r.proyecto)}</td><td>${esc(r.estado)}</td>
       <td>${esc(r.fase)}</td><td>${esc(r.municipio)}</td><td>${esc(r.contrato)}</td>
-      <td>${dbUnlocked ? `<button class="btn btn-sm btn-outline-danger py-0" onclick="delDB(${i})">🗑</button>` : '<span class="mini">🔒</span>'}</td></tr>`;
+      <td style="white-space:nowrap">${dbUnlocked ? `<button class="btn btn-sm epm-btn py-0 me-1" onclick="editDB(${i})" title="Editar">✏️</button><button class="btn btn-sm btn-outline-danger py-0" onclick="delDB(${i})" title="Eliminar">🗑</button>` : '<span class="mini">🔒</span>'}</td></tr>`;
   });
   guardarLocal();
+}
+let dbEditIdx = null;   // índice del proyecto que se está editando (null = agregando uno nuevo)
+function editDB(i){
+  if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
+  const r=DB[i];
+  set('nCodBanco', r.codigo_banco); set('nProy', r.proyecto); set('nEstado', r.estado); set('nFase', r.fase); set('nMun', r.municipio); set('nContrato', r.contrato);
+  dbEditIdx=i;
+  const btn=document.getElementById('btnAddDB'); btn.textContent='💾 Actualizar proyecto'; btn.classList.remove('epm-btn-green'); btn.classList.add('epm-btn');
+}
+function resetDBForm(){
+  ['nCodBanco','nProy','nContrato'].forEach(x=>document.getElementById(x).value='');
+  ['nEstado','nFase','nMun'].forEach(x=>document.getElementById(x).selectedIndex=0);
+  dbEditIdx=null;
+  const btn=document.getElementById('btnAddDB'); if(btn){ btn.textContent='+ Agregar proyecto'; btn.classList.add('epm-btn-green'); btn.classList.remove('epm-btn'); }
 }
 function addDB(){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
   const cb=val('nCodBanco').trim(), p=val('nProy').trim(), es=val('nEstado'), fa=val('nFase'), mu=val('nMun'), co=val('nContrato').trim();
   if(!cb || !p){ alert('Código Banco y Proyecto son obligatorios.'); return; }
-  if(DB.find(x=>x.codigo_banco===cb)){ alert('Ya existe un proyecto con el Código Banco '+cb+'. El Código Banco debe ser único.'); return; }
-  DB.push({codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co});
-  ['nCodBanco','nProy','nContrato'].forEach(x=>document.getElementById(x).value='');
+  // Código Banco único (excluyendo la fila que se está editando)
+  if(DB.find((x,idx)=> x.codigo_banco===cb && idx!==dbEditIdx)){ alert('Ya existe otro proyecto con el Código Banco '+cb+'. El Código Banco debe ser único.'); return; }
+  const registro={codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co};
+  if(dbEditIdx!=null){ DB[dbEditIdx]=registro; } else { DB.push(registro); }
+  resetDBForm();
   renderDB(); renderProyectoSelect();
 }
-function delDB(i){ if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; } if(confirm('¿Eliminar el proyecto '+DB[i].codigo_banco+' de la base?')){ DB.splice(i,1); renderDB(); renderProyectoSelect(); } }
+function delDB(i){ if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; } if(confirm('¿Eliminar el proyecto '+DB[i].codigo_banco+' de la base?')){ DB.splice(i,1); if(dbEditIdx===i) resetDBForm(); renderDB(); renderProyectoSelect(); } }
 function exportarDB(){ descargar(JSON.stringify(DB,null,2), 'proyectos_db.json', 'application/json'); }
 function importarDB(){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave.'); return; }

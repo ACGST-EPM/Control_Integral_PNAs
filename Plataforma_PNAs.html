@@ -183,8 +183,8 @@
    ============================================================ */
 
 /* ---- Catálogo embebido (respaldo) — incluye valor/unidad del plazo ---- */
-const AV_SIMPLE = {"Radicado":10,"Negado":100,"Aprobado":100};
-const AV_COMPLETO = {"Radicado":10,"Observado":20,"Revisión_Ajustes":50,"Resolución_Aprobatoria":80,"Gestión_Pólizas":90,"Gestión_Acta_Inicio":100,"Gestión_Suspensión":100,"Gestión_Reinicio":100};
+const AV_SIMPLE = {"No iniciado":0,"Radicado":10,"Negado":100,"Aprobado":100};
+const AV_COMPLETO = {"No iniciado":0,"Radicado":10,"Observado":20,"Revisión_Ajustes":50,"Resolución_Aprobatoria":80,"Gestión_Pólizas":90,"Gestión_Acta_Inicio":100,"Gestión_Suspensión":100,"Gestión_Reinicio":100};
 const CAT_SEED = {
   permisos:[
     {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#2E7D32", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"], avance_estados:AV_SIMPLE},
