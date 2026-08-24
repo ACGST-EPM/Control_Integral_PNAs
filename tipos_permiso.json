@@ -69,7 +69,7 @@
       "respuesta_en_estados": ["Negado", "Aprobado"],
       "estados_culminables": [],
       "avance_estados": {"Radicado": 10, "Negado": 100, "Aprobado": 100},
-      "color": "#009300",
+      "color": "#2E7D32",
       "geometrias": ["punto", "linea", "poligono"]
     },
     {
@@ -87,7 +87,7 @@
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
-      "color": "#0066CC",
+      "color": "#1565C0",
       "geometrias": ["punto", "linea", "poligono"]
     },
     {
@@ -105,7 +105,7 @@
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
-      "color": "#d56b00",
+      "color": "#00897B",
       "geometrias": ["punto", "linea", "poligono"]
     },
     {
@@ -123,7 +123,7 @@
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
-      "color": "#8e44ad",
+      "color": "#6A1B9A",
       "geometrias": ["punto", "linea", "poligono"]
     },
     {
@@ -141,7 +141,7 @@
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
       "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
-      "color": "#e6a800",
+      "color": "#C2185B",
       "geometrias": ["punto", "linea", "poligono"]
     }
   ]
