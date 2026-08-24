@@ -54,6 +54,11 @@
   .dist-row .lbl{ width:150px; text-align:right; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dist-row .barra{ flex:1; }
   .dist-row .num{ width:26px; font-weight:bold; color:#333; }
+  /* Itinerancia: contorno titilante en el mapa (velocidad según urgencia) */
+  @keyframes titilar { 0%,100%{ opacity:.18; } 50%{ opacity:1; } }
+  .pulse-verde{ animation: titilar 2.4s ease-in-out infinite; }     /* lenta */
+  .pulse-amarillo{ animation: titilar 1.4s ease-in-out infinite; }  /* media */
+  .pulse-rojo{ animation: titilar 0.7s ease-in-out infinite; }      /* rápida */
 </style>
 </head>
 <body>
@@ -230,6 +235,12 @@ function diasHabilesEntre(a,b){
 }
 function hoy(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
 function calcularVencimiento(start, tg){ if(!tg) return null; return tg.unidad==='dias_habiles' ? addBusinessDays(start, tg.valor) : addMonths(start, tg.valor); }
+/* Resta el plazo de gestión a una fecha (para la fecha máxima de inicio de radicación). */
+function restarPlazo(fecha, tg){
+  if(!fecha||!tg) return fecha;
+  if(tg.unidad==='dias_habiles'){ const d=new Date(fecha); let a=0; while(a<tg.valor){ d.setDate(d.getDate()-1); const w=d.getDay(); if(w!==0&&w!==6) a++; } return d; }
+  return addMonths(fecha, -tg.valor);
+}
 
 /* ================= CÁLCULO DE SEMÁFOROS ================= */
 function calcular(p){
@@ -290,6 +301,18 @@ function calcular(p){
     else if(dh > 0)       semR = {clase:'sem-rojo',     txt:'En riesgo ('+dh+' d.háb.)'};
     else                  semR = {clase:'sem-rojo',     txt:'Vencido límite ('+Math.abs(dh)+' d.háb.)'};
   }
+
+  // ---- Itinerancia (titilar en el mapa): SOLO trámites sin radicar ----
+  // Mide días hábiles desde hoy hasta la FECHA MÁXIMA para iniciar la radicación
+  // (= límite - plazo de gestión - holgura). Mismos umbrales del riesgo.
+  let itin = {activa:false, nivel:'verde', dh:null};
+  if(radicaciones===0 && limite && tg){
+    const fechaMaxRad = addDays(restarPlazo(limite, tg), -holg);
+    const dhr = diasHabilesEntre(hoy(), fechaMaxRad);
+    const nivel = (dhr>=uVerde) ? 'verde' : (dhr>=uAmar ? 'amarillo' : 'rojo');
+    itin = {activa:true, nivel:nivel, dh:dhr};
+  }
+  p._itinerancia = itin;
 
   p._estadoActual = estadoActual || '—';
   p._ultRadicado  = ultRad ? (ultRad.radicado_respuesta || ultRad.radicado) : '';
@@ -394,15 +417,27 @@ function initMapa(){
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   capa=L.layerGroup().addTo(map);
 }
+const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935'};
+const ITIN_TXT = {verde:'Itinerancia lenta', amarillo:'Itinerancia media', rojo:'Itinerancia rápida'};
 function dibujarMapa(lista){
   capa.clearLayers(); const pts=[];
   lista.forEach(p=>{
     if(!p.coords||!p.coords.length) return;
+    // Contorno TITILANTE (itinerancia) para trámites sin radicar — se dibuja primero (debajo).
+    if(p._itinerancia && p._itinerancia.activa){
+      const it=p._itinerancia, colH=ITIN_COL[it.nivel], cls='pulse-'+it.nivel;
+      let halo;
+      if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:13,color:colH,weight:3,fill:false,className:cls});
+      else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:5,fill:false,className:cls});
+      else halo=L.polyline(p.coords,{color:colH,weight:9,opacity:1,className:cls});
+      capa.addLayer(halo);
+    }
     let lyr; const col=p._color;
     if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
     else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:2,fillOpacity:.25});
     else lyr=L.polyline(p.coords,{color:col,weight:5});
-    lyr.bindPopup('<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual));
+    const itInfo = (p._itinerancia && p._itinerancia.activa) ? ('<br><span style="color:'+ITIN_COL[p._itinerancia.nivel]+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. para radicar)</span>') : '';
+    lyr.bindPopup('<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual)+itInfo);
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
   });
   if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
@@ -413,8 +448,12 @@ function leyenda(){
   const shapes = `<span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#6c757d"/></svg> Punto</span>`
     + `<span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="#6c757d" stroke-width="4" stroke-linecap="round"/></svg> Línea</span>`
     + `<span><svg width="16" height="14"><rect x="2" y="2" width="12" height="10" rx="1" fill="#6c757d" fill-opacity="0.35" stroke="#6c757d" stroke-width="1.5"/></svg> Polígono</span>`;
+  const itin = `<span><i style="background:#00A651"></i>Lenta</span>`
+    + `<span><i style="background:#F2C200"></i>Media</span>`
+    + `<span><i style="background:#E53935"></i>Rápida</span>`;
   box.innerHTML = `<div class="mb-1"><b class="mini text-success">Tipo de permiso (color):</b> ${cols}</div>`
-    + `<div><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`;
+    + `<div class="mb-1"><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`
+    + `<div><b class="mini text-success">Itinerancia (contorno titilante, sin radicar):</b> ${itin}</div>`;
 }
 /* Círculo de color para acompañar el texto del semáforo */
 function dot(clase){
