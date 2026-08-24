@@ -137,6 +137,24 @@ Los 8 estados ya están completos en el generador. Su significado para el semáf
 
 ---
 
+## 4.2 Ajustes de estandarización (v2 del generador)
+
+Cambios aplicados al generador y reflejados en el dashboard y el catálogo:
+
+1. **Se elimina el `ID`** de la base de proyectos. El **`Código_Banco`** pasa a ser el identificador único del proyecto (no se repite).
+2. **Nuevo campo `Frente`** (numeral 3, datos del permiso): definición **libre** según la estrategia de ejecución de cada proyecto.
+3. **Nombre del permiso automático:** `PNA_CódigoBanco_Frente` (campo de solo lectura, se genera solo).
+4. **Selección de proyecto** se muestra como **`CódigoBanco_Proyecto`**.
+5. **Dos radicados distintos según quién actúa:**
+   - **`Radicado` (radicación del usuario):** solo en el estado **`Radicado`** (`radicado_en_estados` = `["Radicado"]` para todos los permisos). Es la radicación que hace el usuario.
+   - **`Radicado_Respuesta` + `Fecha_Respuesta` (pronunciamiento de la autoridad):** en los estados donde responde la autoridad. En esos estados **no** se pide radicado de radicación, solo el de respuesta:
+     - **PMT_Diseño:** `Negado`, `Aprobado` (`respuesta_en_estados`).
+     - **PUZV, Cierre_Via, PUOI-IVCF, PIV:** `Observado`, `Resolución_Aprobatoria`; y para los estados de gestión (`Gestión_Pólizas`, `Gestión_Acta_Inicio`, `Gestión_Suspensión`, `Gestión_Reinicio`, en `estados_culminables`), **solo al marcar la casilla "culminó"**, momento en que se habilita registrar fecha y radicado de respuesta antes de pasar al siguiente estado (trazabilidad completa).
+6. **Historial** ahora guarda por fila: `estado_tramite`, `radicado`, `fecha_radicacion`, **`culminado`** (bool), **`radicado_respuesta`**, `fecha_respuesta`, `observacion`.
+7. **Catálogo** (`tipos_permiso.json`) amplía cada permiso con `respuesta_en_estados` y `estados_culminables` (siguen siendo datos por tipo de permiso → fuente única de verdad).
+
+---
+
 ## 5. Formato del KMZ (borrador — se cierra al construir el generador)
 
 Cada trazado (`<Placemark>`) llevará en su `<description>` los datos de identidad + PNA, y el **historial serializado**. Propuesta:
