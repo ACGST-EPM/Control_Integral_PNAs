@@ -466,57 +466,70 @@ function initMapa(){
   map=L.map('map').setView([6.24,-75.57],10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   capa=L.layerGroup().addTo(map);
+  // Al alejar/acercar el zoom, redibuja SOLO reescalando la geometría (sin reencuadrar).
+  map.on('zoomend', ()=>{ if(LISTA_MAPA) dibujarMapa(LISTA_MAPA, false); });
 }
 const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935'};
 const ITIN_TXT = {verde:'Itinerancia lenta', amarillo:'Itinerancia media', rojo:'Itinerancia rápida'};
-/* Punto representativo de cualquier geometría (para el marcador SIEMPRE visible al alejar el zoom).
-   Punto→su coordenada; Línea→coordenada central; Polígono→centroide (promedio lat/lng). */
-function puntoRepresentativo(p){
-  const cs=p.coords; if(!cs||!cs.length) return null;
-  if(p.geomType==='Point') return cs[0];
-  if(p.geomType==='Polygon'){
-    let la=0,ln=0; cs.forEach(c=>{la+=c[0];ln+=c[1];}); return [la/cs.length, ln/cs.length];
-  }
-  return cs[Math.floor(cs.length/2)];   // LineString: coordenada del medio
+let LISTA_MAPA = null;   // última lista dibujada, para reescalar al hacer zoom
+/* Factor de escala según el zoom: al ALEJAR (zoom bajo) la geometría se engrosa/agranda
+   para no perderse de vista; al acercar, vuelve a su tamaño natural. */
+function factorZoom(){
+  const z = map ? map.getZoom() : 12;
+  if(z>=15) return 1;
+  if(z>=13) return 1.5;
+  if(z>=11) return 2.3;
+  if(z>=9)  return 3.4;
+  if(z>=7)  return 4.6;
+  return 6;
 }
-function dibujarMapa(lista){
+/* Fecha de gestión de una fila de historial (radicación o respuesta). */
+function fechaGestion(h){ return toDate(h.fecha_radicacion) || toDate(h.fecha_respuesta) || null; }
+/* ¿El permiso ya tuvo alguna gestión con fecha en/antes de la fecha de referencia? */
+function haIniciadoGestion(p, fechaRef){
+  return (p.historial||[]).some(h=>{ const f=fechaGestion(h); return f && f<=fechaRef; });
+}
+function dibujarMapa(lista, reencuadrar){
+  LISTA_MAPA = lista;
+  if(reencuadrar===undefined) reencuadrar=true;
   capa.clearLayers(); const pts=[];
+  const f=factorZoom();
+  const enRecorrido = (FECHA_ANALISIS!==null);   // recorrido temporal activo
   lista.forEach(p=>{
     if(!p.coords||!p.coords.length) return;
-    const col=p._color, rep=puntoRepresentativo(p);
+    // Recorrido temporal: ocultar del mapa los permisos que aún NO han iniciado
+    // gestión a la fecha de análisis (sin radicar / sin ninguna gestión en el período).
+    if(enRecorrido && !haIniciadoGestion(p, hoy())) return;
+    const col=p._color;
     const itAct = !!(p._itinerancia && p._itinerancia.activa);
     const colH = itAct ? ITIN_COL[p._itinerancia.nivel] : null;
     const cls  = itAct ? 'pulse-'+p._itinerancia.nivel : '';
-    // 1) Contorno TITILANTE (itinerancia) sobre la geometría real — se dibuja primero (debajo).
+    // Grosores/tamaños escalados por zoom (crecen al alejar; con tope para no saturar).
+    const wLinea   = Math.min(14, 5*f);
+    const wPolig   = Math.min(10, 2.5*f);
+    const rPunto   = Math.min(16, 6*f);
+    const wHaloLn  = Math.min(20, 9*f);
+    const wHaloPg  = Math.min(14, 5*f);
+    const rHaloPt  = Math.min(22, 13*f);
+    // 1) Contorno TITILANTE (itinerancia) SOBRE la propia geometría — se dibuja primero (debajo).
     if(itAct){
       let halo;
-      if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:13,color:colH,weight:3,fill:false,className:cls});
-      else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:5,fill:false,className:cls});
-      else halo=L.polyline(p.coords,{color:colH,weight:9,opacity:1,className:cls});
+      if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:3,fill:false,className:cls});
+      else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls});
+      else halo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls});
       capa.addLayer(halo);
     }
-    // 2) Geometría base (línea / polígono / punto) con el color del tipo de permiso.
+    // 2) Geometría de cada permiso (punto / línea / polígono) con el color del tipo de permiso.
     let lyr;
-    if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
-    else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:2,fillOpacity:.25});
-    else lyr=L.polyline(p.coords,{color:col,weight:5});
+    if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:rPunto,color:col,fillColor:col,fillOpacity:.9});
+    else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:wPolig,fillOpacity:.30});
+    else lyr=L.polyline(p.coords,{color:col,weight:wLinea});
     const itInfo = itAct ? ('<br><span style="color:'+colH+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. '+(p._itinerancia.base==='radicación'?'para radicar':'al límite')+')</span>') : '';
     const popup = '<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual)+itInfo;
     lyr.bindPopup(popup);
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
-    // 3) Marcador SIEMPRE VISIBLE (tamaño fijo en píxeles a cualquier zoom) en el punto representativo,
-    //    para que líneas y polígonos NO desaparezcan al alejar el zoom. Solo para geometrías no puntuales.
-    if(rep && p.geomType!=='Point'){
-      if(itAct){   // anillo titilante de itinerancia acompañando el marcador
-        const ring=L.circleMarker(rep,{radius:11,color:colH,weight:3,fill:false,className:cls});
-        capa.addLayer(ring);
-      }
-      const mk=L.circleMarker(rep,{radius:6,color:'#fff',weight:2,fillColor:col,fillOpacity:1});
-      mk.bindPopup(popup);
-      capa.addLayer(mk);
-    }
   });
-  if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
+  if(reencuadrar && pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
 }
 function leyenda(){
   const box=document.getElementById('leyenda');
@@ -572,21 +585,46 @@ function negocioColor(n){
   return '#6c757d';
 }
 function nivelToClase(n){ return n==='verde'?'sem-verde':(n==='amarillo'?'sem-amarillo':(n==='rojo'?'sem-rojo':'sem-gris')); }
-/* Panel "Permisos por Proyecto": estado actual + semáforo de inicio (itinerancia) y de obtención (riesgo) */
+/* Semáforo de INICIO del trámite = ¿se radicó (inició) a tiempo?
+   - Ya radicado  → verde "Iniciado".
+   - Sin radicar  → urgencia para radicar antes de la fecha máxima de radicación (color de itinerancia).
+*/
+function estadoInicio(p){
+  if(p._radicaciones>0) return {clase:'sem-verde', txt:'Iniciado'};
+  if(p._itinerancia && p._itinerancia.activa) return {clase:nivelToClase(p._itinerancia.nivel), txt:'Sin iniciar'};
+  return {clase:'sem-gris', txt:'Sin iniciar'};
+}
+/* Semáforo de OBTENCIÓN = ¿se obtendrá el permiso antes de la fecha límite del proyecto?
+   - Listo/Activado → verde "Obtenido".
+   - En trámite     → días hábiles hasta la fecha límite (semáforo de riesgo).
+*/
+function estadoObtencion(p){
+  if(p._listo) return {clase:'sem-verde', txt:'Obtenido'};
+  return {clase:p._semR.clase, txt:p._riesgoCat||'—'};
+}
+function chip(s){ return `<span class="sem ${s.clase}" style="font-size:.72rem;white-space:nowrap">${dot(s.clase)}${esc(s.txt)}</span>`; }
+/* Panel "Permisos por Proyecto": por cada permiso, estado actual + dos semáforos claros:
+   INICIO (¿radicó a tiempo?) y OBTENCIÓN (¿lo obtendrá antes del límite del proyecto?). */
 function renderPorProyecto(lista){
   const box=document.getElementById('porProyecto');
   if(!lista.length){ box.innerHTML='<i class="mini">Sin datos.</i>'; return; }
   const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
-  let html='<div class="mini text-muted mb-1">● inicio &nbsp; ● obtención</div>';
+  let html=`<div class="mini text-muted mb-2" style="line-height:1.35">
+    <b>Inicio</b> = ¿se radicó el trámite a tiempo? &nbsp;·&nbsp; <b>Obtención</b> = ¿se obtendrá antes de la fecha límite del proyecto?<br>
+    ${dot('sem-verde')}ok &nbsp; ${dot('sem-amarillo')}por vencer &nbsp; ${dot('sem-rojo')}en riesgo &nbsp; ${dot('sem-gris')}sin dato
+  </div>`;
   Object.keys(grupos).sort().forEach(proy=>{
-    html += `<div class="mini fw-bold text-success mt-1" style="border-bottom:1px solid #e9ecef">${esc(proy)}</div>`;
+    html += `<div class="mini fw-bold text-success mt-2 pb-1" style="border-bottom:1px solid #e9ecef">${esc(proy)}</div>`;
     grupos[proy].forEach(p=>{
-      const inicioClase = (p._itinerancia&&p._itinerancia.activa) ? nivelToClase(p._itinerancia.nivel) : (p._listo?'sem-verde':'sem-gris');
-      html += `<div class="dist-row" style="gap:6px">
-        <span class="lbl" style="width:auto;flex:1;text-align:left" title="${esc(p.frente||'')} · ${esc(p.pna||'')}">${esc(p.frente||p.nombre)} <span class="mini">(${esc(p.pna||'')})</span></span>
-        <span class="mini" style="width:auto;color:#495057">${esc(p._estadoActual)}</span>
-        <span title="Riesgo de inicio (itinerancia): ${esc(inicioClase)}">${dot(inicioClase)}</span>
-        <span title="Riesgo de obtención: ${esc(p._riesgoCat)}">${dot(p._semR.clase)}</span>
+      html += `<div class="py-1" style="border-bottom:1px dashed #f1f3f5">
+        <div style="display:flex;justify-content:space-between;gap:6px;align-items:baseline">
+          <span class="fw-bold" style="font-size:.82rem" title="${esc(p.frente||'')}">${esc(p.frente||p.nombre)} <span class="mini text-muted">${esc(p.pna||'')}</span></span>
+          <span class="mini text-muted" style="white-space:nowrap">${esc(p._estadoActual)}</span>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:2px">
+          <span class="mini text-muted">Inicio:</span> ${chip(estadoInicio(p))}
+          <span class="mini text-muted">Obtención:</span> ${chip(estadoObtencion(p))}
+        </div>
       </div>`;
     });
   });
@@ -679,7 +717,7 @@ function refrescarTodo(){
     dom:"<'row'<'col-sm-6'l><'col-sm-6 text-end'B>><'row'<'col-12'tr>><'row'<'col-sm-5'i><'col-sm-7'p>>",
     buttons:[{extend:'excelHtml5', text:'📥 Excel', className:'btn btn-sm btn-success'}]
   });
-  dibujarMapa(lista);
+  dibujarMapa(lista, FECHA_ANALISIS===null);   // reencuadra solo fuera del recorrido temporal
   // KPIs
   document.getElementById('kpiTotal').textContent   = lista.length;
   document.getElementById('kpiRiesgo').textContent  = lista.filter(p=>p._semR.clase==='sem-rojo').length;
