@@ -173,10 +173,10 @@
                   <label class="form-check-label mini" for="hCulminado">Este estado ya <b>culminó</b> (habilita fecha y radicado de respuesta)</label>
                 </div>
               </div>
-              <div class="col-6"><label class="mini">Radicado (radicación)</label><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
-              <div class="col-6"><label class="mini">Radicado de respuesta</label><input id="hRadResp" class="form-control form-control-sm" placeholder="Radicado de respuesta"></div>
-              <div class="col-6"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
-              <div class="col-6"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
+              <div class="col-6" id="cRadic"><label class="mini">Radicado (radicación)</label><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
+              <div class="col-6" id="cRadResp"><label class="mini">Radicado de respuesta</label><input id="hRadResp" class="form-control form-control-sm" placeholder="Radicado de respuesta"></div>
+              <div class="col-6" id="cFRad"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
+              <div class="col-6" id="cFResp"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
               <div class="col-12"><input id="hObs" class="form-control form-control-sm" placeholder="Observación"></div>
               <div class="col-12 text-end mt-1"><button class="btn btn-sm epm-btn" onclick="addHist()">+ Agregar al historial</button></div>
             </div>
@@ -218,7 +218,7 @@
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead class="table-dark"><tr>
-            <th>#</th><th>Nombre</th><th>Geom.</th><th>Proyecto</th><th>PNA</th><th>Autoridad</th><th>Hist.</th><th>Estado actual</th><th>Válido</th><th>Acciones</th>
+            <th>#</th><th>Nombre</th><th>Geom.</th><th>Proyecto</th><th>PNA</th><th>Autoridad</th><th>Hist.</th><th>Estados Trámite</th><th>Válido</th><th>Acciones</th>
           </tr></thead>
           <tbody id="listaBody"><tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr></tbody>
         </table>
@@ -296,7 +296,24 @@ function cargarLocal(){
    siendo el almacén oficial y portable; esto es solo una red de seguridad local. */
 function guardarTrazadosLocal(){ try{ localStorage.setItem('pna_trazados', JSON.stringify(trazados)); }catch(e){} }
 function cargarTrazadosLocal(){
-  try{ const d=localStorage.getItem('pna_trazados'); if(d){ trazados=JSON.parse(d)||[]; trazados.forEach(t=>{ if(t._uid>=idSeq) idSeq=t._uid+1; }); } }catch(e){}
+  try{ const d=localStorage.getItem('pna_trazados'); if(d){ trazados=JSON.parse(d)||[]; trazados.forEach(t=>{ if(t && t._uid>=idSeq) idSeq=t._uid+1; }); } }catch(e){}
+  podarVacios(); dedupeTrazados();
+}
+/* Clave de identidad de un permiso: su nombre (PNA_CódigoBanco_Frente). */
+function claveTrazado(t){ return ((t.nombre||'').trim()) || ('__uid'+t._uid); }
+/* Elimina permisos duplicados (mismo nombre), conservando la ÚLTIMA versión (la más reciente). */
+function dedupeTrazados(){
+  const seen={}, out=[];
+  for(let i=trazados.length-1;i>=0;i--){
+    const t=trazados[i]; if(!t) continue;
+    const k=claveTrazado(t);
+    if(seen[k]) continue; seen[k]=true; out.unshift(t);
+  }
+  trazados=out;
+}
+/* Descarta trazos "fantasma" completamente vacíos (p. ej. una línea dibujada y nunca completada). */
+function podarVacios(){
+  trazados=(trazados||[]).filter(t=> t && ((t.nombre||'').trim() || t.pna || t.codigo_banco || t.frente || (t.historial&&t.historial.length)));
 }
 function nuevaSesion(){
   if(!trazados.length || confirm('Esto limpia los permisos cargados en esta sesión de trabajo.\nNo borra tus KMZ ya exportados ni la base de proyectos. ¿Continuar?')){
@@ -435,22 +452,23 @@ function autoLlenarPNA(){
 function ajustarCamposHist(){
   const p=permisoDe(val('fPNA')); const est=val('hEstado');
   const inclui=(lista)=> p && est && (lista||[]).includes(est);
-  // Radicado de radicación
-  const permiteRad = inclui(p&&p.radicado_en_estados);
-  const rad=document.getElementById('hRadicado');
-  rad.disabled=!permiteRad; rad.placeholder = permiteRad?'Radicado (radicación del usuario)':'No aplica → usa Radicado de respuesta';
-  if(!permiteRad) rad.value='';
-  // Casilla culminó
-  const culminable = inclui(p&&p.estados_culminables);
+  const permiteRad = inclui(p&&p.radicado_en_estados);      // el usuario radica
+  const culminable = inclui(p&&p.estados_culminables);      // estado de gestión que se culmina
   document.getElementById('boxCulminado').style.display = culminable ? '' : 'none';
   if(!culminable) document.getElementById('hCulminado').checked=false;
-  // F. respuesta + radicado de respuesta
   const respDirecta = inclui(p&&p.respuesta_en_estados);
-  const permiteResp = respDirecta || (culminable && document.getElementById('hCulminado').checked);
-  const fResp=document.getElementById('hFResp'), rResp=document.getElementById('hRadResp');
-  fResp.disabled=!permiteResp; rResp.disabled=!permiteResp;
-  rResp.placeholder = permiteResp?'Radicado de respuesta':'(disponible al culminar / responder)';
-  if(!permiteResp){ fResp.value=''; rResp.value=''; }
+  const permiteResp = respDirecta || (culminable && document.getElementById('hCulminado').checked); // responde la autoridad
+  // Se muestran SOLO los campos que aplican al estado:
+  //  - Radicación: Radicado + F. radicación (cuando radica el usuario).
+  //  - Respuesta:  Radicado de respuesta + F. respuesta (cuando responde la autoridad).
+  const mostrar=(boxId,inputId,ver)=>{
+    document.getElementById(boxId).style.display = ver ? '' : 'none';
+    const el=document.getElementById(inputId); if(el){ el.disabled=false; if(!ver) el.value=''; }
+  };
+  mostrar('cRadic','hRadicado', permiteRad);
+  mostrar('cFRad','hFRad',      permiteRad);
+  mostrar('cRadResp','hRadResp', permiteResp);
+  mostrar('cFResp','hFResp',     permiteResp);
 }
 
 /* ===========================================================
@@ -555,7 +573,7 @@ async function importarGeom(file){
   const dom = new DOMParser().parseFromString(kmlText, 'text/xml');
   const placemarks = getByLocal(dom, 'Placemark');
   if(!placemarks.length){ alert('No se encontraron trazados (Placemark) en el archivo.'); return; }
-  let importados=0;
+  const nuevos=[];
   placemarks.forEach(pm=>{
     const nombre = textLocal(pm,'name') || 'SIN_NOMBRE';
     const desc   = textLocal(pm,'description') || '';
@@ -573,10 +591,17 @@ async function importarGeom(file){
     t.pna=meta.pna||''; t.concesion=meta.concesion||'';
     t.fecha_limite_requerida=meta.fecha_limite_requerida||''; t.holgura_dias=meta.holgura_dias||'';
     t.historial = meta.historial || [];
-    trazados.push(t); importados++;
+    nuevos.push(t);
   });
+  if(!nuevos.length){ alert('No se encontraron trazados válidos en el archivo.'); return; }
+  // REEMPLAZO (no duplica): quita de la sesión los permisos con el mismo nombre que traiga el archivo.
+  const nombresImp = new Set(nuevos.map(t=>(t.nombre||'').trim()).filter(Boolean));
+  trazados = trazados.filter(t=>{ const n=(t.nombre||'').trim(); return !(n && nombresImp.has(n)); });
+  nuevos.forEach(t=>trazados.push(t));
+  editandoId=null;                 // evita que un "Guardar" posterior cree un duplicado
+  podarVacios(); dedupeTrazados();
   renderLista(); dibujarTodo(); validar(); ajustarVista();
-  alert(importados+' permiso(s) importado(s). Revisa cada uno en la tabla y complétalos si falta algo.');
+  alert(nuevos.length+' permiso(s) importado(s). Si el proyecto ya estaba en la sesión, se reemplazó por la versión del archivo (no se duplica).');
 }
 
 /* ===========================================================
@@ -619,6 +644,8 @@ function guardarTrazado(){
   if(!t.geomType){ alert('Este permiso no tiene geometría. Dibuja o importa primero.'); return; }
   const p=permisoDe(t.pna);
   if(p && p.requiere_concesion && !t.concesion){ if(!confirm('Este permiso (ANI) normalmente requiere Concesión y está vacía. ¿Guardar de todos modos?')) return; }
+  dedupeTrazados();               // si quedó un permiso con el mismo nombre, gana esta versión (no duplica)
+  editandoId = t._uid;
   renderLista(); dibujarTodo(); validar();
   document.getElementById('editHint').textContent='Guardado ✔';
 }
@@ -656,20 +683,36 @@ function renderLista(){
   guardarTrazadosLocal();   // autoguardado de la sesión de trabajo
   const b=document.getElementById('listaBody'); document.getElementById('cnt').textContent=trazados.length;
   if(!trazados.length){ b.innerHTML='<tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr>'; return; }
-  b.innerHTML='';
-  trazados.forEach((t,i)=>{
+  let html='';
+  trazados.forEach((t)=>{
     const f=faltantes(t); const p=permisoDe(t.pna);
-    const estado = f.length ? `<span class="badge badge-bad">Falta: ${f.join(', ')}</span>` : `<span class="badge badge-ok">Completo</span>`;
-    b.innerHTML += `<tr>
-      <td>${i+1}</td><td>${esc(t.nombre)||'<i class="mini">—</i>'}</td><td>${tipoLegible(t.geomType)}</td>
-      <td>${esc(t.proyecto)||'—'}</td><td>${esc(t.pna)||'—'}</td><td>${esc(p?p.autoridad:'—')}</td>
-      <td>${(t.historial||[]).length}</td><td>${esc(estadoActual(t.historial))}</td><td>${estado}</td>
-      <td style="white-space:nowrap">
+    // Columnas que se COMPILAN (iguales para todo el permiso) -> se muestran una vez con rowspan.
+    // Columnas por fila (una por cada avance del historial): #, Estados Trámite, Válido, Acciones.
+    const validoBadge = f.length ? `<span class="badge badge-bad">Falta: ${esc(f.join(', '))}</span>` : `<span class="badge badge-ok">Completo</span>`;
+    const acciones = `<div style="white-space:nowrap">
         <button class="btn btn-sm epm-btn py-0" onclick="editar(${t._uid})" title="Editar">✏️</button>
         <button class="btn btn-sm epm-btn-orange py-0" onclick="duplicar(${t._uid})" title="Duplicar">⧉</button>
         <button class="btn btn-sm btn-outline-danger py-0" onclick="borrar(${t._uid})" title="Eliminar">🗑</button>
-      </td></tr>`;
+      </div>`;
+    const avances = (t.historial && t.historial.length) ? t.historial : [null];
+    const N = avances.length;
+    avances.forEach((h, idx)=>{
+      let cells = `<td>${idx+1}</td>`;                     // # (número de avance) — por fila
+      if(idx===0){                                          // bloque compilado (rowspan) solo en la 1ª fila
+        cells += `<td rowspan="${N}">${esc(t.nombre)||'<i class="mini">—</i>'}</td>`
+              +  `<td rowspan="${N}">${tipoLegible(t.geomType)}</td>`
+              +  `<td rowspan="${N}">${esc(t.proyecto)||'—'}</td>`
+              +  `<td rowspan="${N}">${esc(t.pna)||'—'}</td>`
+              +  `<td rowspan="${N}">${esc(p?p.autoridad:'—')}</td>`
+              +  `<td rowspan="${N}">${(t.historial||[]).length}</td>`;
+      }
+      const estadoTxt = h ? (esc(h.estado_tramite||'—') + (h.culminado?' <span class="badge badge-ok" title="culminó">✔</span>':''))
+                          : '<i class="mini">sin historial</i>';
+      cells += `<td>${estadoTxt}</td><td>${validoBadge}</td><td>${acciones}</td>`;
+      html += '<tr>'+cells+'</tr>';
+    });
   });
+  b.innerHTML = html;
 }
 function validar(){
   const box=document.getElementById('validBox');
@@ -702,6 +745,7 @@ function ajustarVista(){ const pts=[]; trazados.forEach(t=>(t.coords||[]).forEac
    EXPORTAR KMZ
    =========================================================== */
 async function exportarKMZ(){
+  podarVacios(); dedupeTrazados();   // nunca exportar permisos repetidos o fantasma
   if(!trazados.length){ alert('No hay permisos para exportar.'); return; }
   const malos=trazados.filter(t=>faltantes(t).length);
   if(malos.length && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Exportar de todos modos?')) return;
