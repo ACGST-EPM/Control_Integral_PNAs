@@ -205,6 +205,19 @@ function addBusinessDays(date,n){ const d=new Date(date); let a=0; while(a<n){ d
 function addMonths(date,n){ const d=new Date(date); d.setMonth(d.getMonth()+n); return d; }
 function addDays(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
 function diasEntre(a,b){ return Math.round((b-a)/86400000); }
+/* Días hábiles (L-V) entre a y b: positivo si b>a, negativo si b<a, 0 si igual. */
+function diasHabilesEntre(a,b){
+  if(!a||!b) return 0;
+  let d=new Date(a); d.setHours(0,0,0,0);
+  const end=new Date(b); end.setHours(0,0,0,0);
+  if(end.getTime()===d.getTime()) return 0;
+  const sign = end>d ? 1 : -1; let count=0; let cur=new Date(d);
+  while(cur.getTime()!==end.getTime()){
+    cur.setDate(cur.getDate()+sign);
+    const w=cur.getDay(); if(w!==0 && w!==6) count += sign;
+  }
+  return count;
+}
 function hoy(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
 function calcularVencimiento(start, tg){ if(!tg) return null; return tg.unidad==='dias_habiles' ? addBusinessDays(start, tg.valor) : addMonths(start, tg.valor); }
 
@@ -246,21 +259,32 @@ function calcular(p){
   //  si se acerca/pasa la fecha en que el proyecto necesita el permiso.)
   const limite = toDate(p.fecha_limite_requerida);
   const holg = parseInt(p.holgura_dias)||0;
+  const esPMT = (p.pna==='PMT_Diseño');
+  // "Listo/Activado": PMT solo cuando Aprobado (Negado obliga a re-radicar y el reloj sigue);
+  //  los demás cuando alcanzan la activación (avance 100% = Acta_Inicio/Suspensión/Reinicio).
+  const listo = esPMT ? alcanzo('Aprobado') : (avance>=100);
+  // Umbrales en DÍAS HÁBILES hasta la fecha límite (menos holgura):
+  //  - PMT_Diseño:  verde >=30 · amarillo 20–30 · rojo <20 (incl. vencido).
+  //  - Los demás:   verde >=45 · amarillo 30–45 · rojo <30 (incl. vencido).
+  const uVerde = esPMT ? 30 : 45;
+  const uAmar  = esPMT ? 20 : 30;
   let semR;
-  if(avance>=100){
+  if(listo){
     semR = {clase:'sem-verde', txt:'Listo / Activado'};
   } else if(!limite){
     semR = {clase:'sem-gris', txt:'Sin fecha límite'};
   } else {
-    const dr = diasEntre(hoy(), addDays(limite,-holg));   // días hasta el límite (menos holgura)
-    if(dr < 0)      semR = {clase:'sem-rojo',     txt:'Vencido límite ('+Math.abs(dr)+'d)'};
-    else if(dr<=30) semR = {clase:'sem-amarillo', txt:'Próximo al límite ('+dr+'d)'};
-    else            semR = {clase:'sem-verde',    txt:'En plazo ('+dr+'d)'};
+    const dh = diasHabilesEntre(hoy(), addDays(limite,-holg));
+    if(dh >= uVerde)      semR = {clase:'sem-verde',    txt:'En plazo ('+dh+' d.háb.)'};
+    else if(dh >= uAmar)  semR = {clase:'sem-amarillo', txt:'Próximo al límite ('+dh+' d.háb.)'};
+    else if(dh > 0)       semR = {clase:'sem-rojo',     txt:'En riesgo ('+dh+' d.háb.)'};
+    else                  semR = {clase:'sem-rojo',     txt:'Vencido límite ('+Math.abs(dh)+' d.háb.)'};
   }
 
   p._estadoActual = estadoActual || '—';
   p._ultRadicado  = ultRad ? (ultRad.radicado_respuesta || ultRad.radicado) : '';
   p._avance = avance;
+  p._listo = listo;
   p._radicaciones = radicaciones;
   p._semG = semG; p._semR = semR;
   p._autoridad = perm.autoridad || p.autoridad || '';
@@ -470,7 +494,7 @@ function refrescarTodo(){
   document.getElementById('kpiTotal').textContent   = lista.length;
   document.getElementById('kpiRiesgo').textContent  = lista.filter(p=>p._semR.clase==='sem-rojo').length;
   document.getElementById('kpiVencido').textContent = lista.filter(p=>p._semG.clase==='sem-rojo').length;
-  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._avance>=100).length;
+  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._listo).length;
   // Gráficos
   const prom = lista.length ? Math.round(lista.reduce((s,p)=>s+(p._avance||0),0)/lista.length) : 0;
   document.getElementById('donaAvance').innerHTML = donutSVG(prom, 130);
