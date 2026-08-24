@@ -64,11 +64,11 @@
       "autoridad_detalle": "Secretaría de Movilidad de cada municipio donde se desarrolla el proyecto",
       "requiere_concesion": false,
       "tiempo_gestion": { "valor": 15, "unidad": "dias_habiles", "texto": "15 días hábiles" },
-      "estados_tramite": ["Radicado", "Negado", "Aprobado"],
+      "estados_tramite": ["No iniciado", "Radicado", "Negado", "Aprobado"],
       "radicado_en_estados": ["Radicado"],
       "respuesta_en_estados": ["Negado", "Aprobado"],
       "estados_culminables": [],
-      "avance_estados": {"Radicado": 10, "Negado": 100, "Aprobado": 100},
+      "avance_estados": {"No iniciado": 0, "Radicado": 10, "Negado": 100, "Aprobado": 100},
       "color": "#2E7D32",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -80,13 +80,13 @@
       "requiere_concesion": false,
       "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
       "estados_tramite": [
-        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "No iniciado", "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado"],
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
-      "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
+      "avance_estados": {"No iniciado": 0, "Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
       "color": "#1565C0",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -98,13 +98,13 @@
       "requiere_concesion": false,
       "tiempo_gestion": { "valor": 3, "unidad": "meses", "texto": "3 meses" },
       "estados_tramite": [
-        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "No iniciado", "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado"],
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
-      "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
+      "avance_estados": {"No iniciado": 0, "Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
       "color": "#00897B",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -116,13 +116,13 @@
       "requiere_concesion": true,
       "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
       "estados_tramite": [
-        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "No iniciado", "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado"],
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
-      "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
+      "avance_estados": {"No iniciado": 0, "Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
       "color": "#6A1B9A",
       "geometrias": ["punto", "linea", "poligono"]
     },
@@ -134,13 +134,13 @@
       "requiere_concesion": false,
       "tiempo_gestion": { "valor": 12, "unidad": "meses", "texto": "12 meses" },
       "estados_tramite": [
-        "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
+        "No iniciado", "Radicado", "Observado", "Revisión_Ajustes", "Resolución_Aprobatoria",
         "Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"
       ],
       "radicado_en_estados": ["Radicado"],
       "respuesta_en_estados": ["Observado", "Resolución_Aprobatoria"],
       "estados_culminables": ["Gestión_Pólizas", "Gestión_Acta_Inicio", "Gestión_Suspensión", "Gestión_Reinicio"],
-      "avance_estados": {"Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
+      "avance_estados": {"No iniciado": 0, "Radicado": 10, "Observado": 20, "Revisión_Ajustes": 50, "Resolución_Aprobatoria": 80, "Gestión_Pólizas": 90, "Gestión_Acta_Inicio": 100, "Gestión_Suspensión": 100, "Gestión_Reinicio": 100},
       "color": "#C2185B",
       "geometrias": ["punto", "linea", "poligono"]
     }
