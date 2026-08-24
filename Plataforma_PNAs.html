@@ -13,8 +13,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root{ --epm-verde:#009300; --epm-lima:#b7c200; --epm-naranja:#d56b00; }
-  body{ background:#f8f9fa; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+  :root{ --epm-verde:#009444; --epm-verde-osc:#00723A; --epm-lima:#93C01F; --epm-naranja:#d56b00; }
+  body{ background:#f3f8f4; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
   .epm-header{ background:#fff; border-bottom:4px solid var(--epm-verde); box-shadow:0 2px 8px rgba(0,0,0,.1); padding:8px 20px; }
   .epm-title{ color:var(--epm-verde); font-weight:bold; font-size:19px; margin-left:12px; vertical-align:middle; }
   .epm-card-header{ background:var(--epm-verde); color:#fff; font-weight:bold; padding:8px 14px; font-size:.95rem;}
@@ -41,6 +41,10 @@
   .badge-aut{ display:inline-flex; align-items:center; gap:5px; padding:2px 7px; border-radius:5px; font-weight:700;
               font-size:.66rem; letter-spacing:.3px; color:#fff; line-height:1.1; box-shadow:0 1px 2px rgba(0,0,0,.15); white-space:nowrap;}
   .badge-aut small{ font-weight:600; opacity:.9; font-size:.9em; }
+  .logo-muni{ display:inline-flex; align-items:center; gap:5px; }
+  .logo-muni-txt{ display:flex; flex-direction:column; line-height:1.05; }
+  .logo-muni-txt b{ font-size:.64rem; color:#1b5e20; letter-spacing:.2px; }
+  .logo-muni-txt small{ font-size:.6rem; color:#495057; }
   .barra{ background:#e9ecef; border-radius:4px; height:9px; overflow:hidden; }
   .barra > span{ display:block; height:100%; border-radius:4px; }
   .chart-card{ background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:12px 14px; height:100%; }
@@ -57,7 +61,7 @@
   <span class="epm-title">PLATAFORMA CONTROL INTEGRAL PNAs</span>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
-    <span class="logo-wrap"><img src="assets/logos/epm.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="height:34px" alt="EPM"><span class="badge-aut" style="display:none;background:#009300;font-size:.9rem;padding:4px 10px">epm<small>®</small></span></span>
+    <span class="logo-wrap"><img src="Logo_EPM.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="height:38px" alt="EPM"><span class="badge-aut" style="display:none;background:#2E7D32;font-size:.95rem;padding:4px 12px">epm<small>®</small></span></span>
   </span>
 </div>
 
@@ -177,11 +181,11 @@ const AV_SIMPLE = {"Radicado":10,"Negado":100,"Aprobado":100};
 const AV_COMPLETO = {"Radicado":10,"Observado":20,"Revisión_Ajustes":50,"Resolución_Aprobatoria":80,"Gestión_Pólizas":90,"Gestión_Acta_Inicio":100,"Gestión_Suspensión":100,"Gestión_Reinicio":100};
 const CAT_SEED = {
   permisos:[
-    {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#009300", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"], avance_estados:AV_SIMPLE},
-    {pna:"PUZV", autoridad:"INVIAS", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#0066CC", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
-    {pna:"Cierre_Via", autoridad:"INVIAS", tiempo_gestion:{valor:3,unidad:"meses",texto:"3 meses"}, color:"#d56b00", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
-    {pna:"PUOI-IVCF", autoridad:"ANI", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#8e44ad", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
-    {pna:"PIV", autoridad:"Gobernación", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#e6a800", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO}
+    {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#2E7D32", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"], avance_estados:AV_SIMPLE},
+    {pna:"PUZV", autoridad:"INVIAS", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#1565C0", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"Cierre_Via", autoridad:"INVIAS", tiempo_gestion:{valor:3,unidad:"meses",texto:"3 meses"}, color:"#00897B", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"PUOI-IVCF", autoridad:"ANI", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#6A1B9A", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"PIV", autoridad:"Gobernación", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#C2185B", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO}
   ]
 };
 let CAT = CAT_SEED;
@@ -403,8 +407,18 @@ function dibujarMapa(lista){
   if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
 }
 function leyenda(){
-  const box=document.getElementById('leyenda'); box.innerHTML='';
-  (CAT.permisos||CAT_SEED.permisos).forEach(p=>{ box.innerHTML+=`<span><i style="background:${p.color}"></i>${esc(p.pna)}</span>`; });
+  const box=document.getElementById('leyenda');
+  const cols=(CAT.permisos||CAT_SEED.permisos).map(p=>`<span><i style="background:${p.color}"></i>${esc(p.pna)}</span>`).join('');
+  const shapes = `<span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#6c757d"/></svg> Punto</span>`
+    + `<span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="#6c757d" stroke-width="4" stroke-linecap="round"/></svg> Línea</span>`
+    + `<span><svg width="16" height="14"><rect x="2" y="2" width="12" height="10" rx="1" fill="#6c757d" fill-opacity="0.35" stroke="#6c757d" stroke-width="1.5"/></svg> Polígono</span>`;
+  box.innerHTML = `<div class="mb-1"><b class="mini text-success">Tipo de permiso (color):</b> ${cols}</div>`
+    + `<div><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`;
+}
+/* Círculo de color para acompañar el texto del semáforo */
+function dot(clase){
+  const m={'sem-verde':'#009444','sem-amarillo':'#e6a800','sem-rojo':'#dc3545','sem-gris':'#adb5bd'};
+  return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m[clase]||'#adb5bd'};margin-right:5px;vertical-align:middle"></span>`;
 }
 
 /* ================= GRÁFICOS (SVG puro, sin dependencias) ================= */
@@ -436,19 +450,28 @@ function conteo(lista, campo){
 /* ================= INSIGNIAS / LOGOS DE AUTORIDAD ================= */
 function autInfo(aut){
   const a=(aut||'').toLowerCase();
-  if(a.includes('invias'))  return {key:'invias', label:'INVIAS', color:'#F2A900', text:'#1a1a1a'};
-  if(a.includes('ani'))     return {key:'ani', label:'ANI', color:'#E8630A', text:'#fff'};
-  if(a.includes('gober'))   return {key:'gobernacion', label:'GOB. ANTIOQUIA', color:'#0b7a3b', text:'#fff'};
-  if(a.includes('municip')) return {key:'municipio', label:'SEC. MOVILIDAD', color:'#1f4e79', text:'#fff'};
-  return {key:'otro', label:(aut||'—').toUpperCase(), color:'#6c757d', text:'#fff'};
+  if(a.includes('invias'))  return {key:'invias', file:'Logo_INVIAS.png', label:'INVIAS', color:'#F2A900', text:'#1a1a1a'};
+  if(a.includes('ani'))     return {key:'ani', file:'Logo_ANI.png', label:'ANI', color:'#E8630A', text:'#fff'};
+  if(a.includes('gober'))   return {key:'gobernacion', file:'Logo_Gob.png', label:'GOB. ANTIOQUIA', color:'#0b7a3b', text:'#fff'};
+  if(a.includes('municip')) return {key:'municipio', file:'', label:'SEC. MOVILIDAD', color:'#2E7D32', text:'#fff'};
+  return {key:'otro', file:'', label:(aut||'—').toUpperCase(), color:'#6c757d', text:'#fff'};
 }
-/* Muestra el logo oficial si existe en assets/logos/<key>.png; si no, una insignia profesional. */
+/* Logo genérico estandarizado para las Secretarías de Movilidad municipales. */
+function logoMunicipio(municipio){
+  const m = municipio || 'Municipio';
+  return `<span class="logo-muni" title="Secretaría de Movilidad de ${esc(m)}">`
+    + `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 6v5c0 5 3.8 8.6 9 11 5.2-2.4 9-6 9-11V6z" fill="#2E7D32"/><path d="M7.5 12l2.8 2.8L16.5 8.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    + `<span class="logo-muni-txt"><b>Sec. Movilidad</b><small>${esc(m)}</small></span></span>`;
+}
+/* Muestra el logo oficial (archivo en la raíz) si existe; si no, la insignia de respaldo. */
 function badgeAutoridad(aut, municipio){
   const i=autInfo(aut);
-  const sub=(i.key==='municipio' && municipio) ? ' <small>'+esc(municipio)+'</small>' : '';
+  if(i.key==='municipio') return logoMunicipio(municipio);
+  const badge = `<span class="badge-aut" style="background:${i.color};color:${i.text}">${esc(i.label)}</span>`;
+  if(!i.file) return `<span class="logo-wrap" title="${esc(aut||'')}">${badge}</span>`;
   return `<span class="logo-wrap" title="${esc(aut||'')}">`
-    + `<img src="assets/logos/${i.key}.png" alt="${esc(i.label)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">`
-    + `<span class="badge-aut" style="display:none;background:${i.color};color:${i.text}">${esc(i.label)}${sub}</span>`
+    + `<img src="${i.file}" alt="${esc(i.label)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">`
+    + `<span class="badge-aut" style="display:none;background:${i.color};color:${i.text}">${esc(i.label)}</span>`
     + `</span>`;
 }
 
@@ -461,8 +484,8 @@ function fila(p){
     <td>${esc(p._estadoActual)}</td>
     <td style="min-width:92px" data-order="${p._avance}">${barra(p._avance,col)}<span class="mini">${p._avance}%</span></td>
     <td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
-    <td class="sem ${p._semG.clase}">${p._semG.txt}</td>
-    <td class="sem ${p._semR.clase}">${p._semR.txt}</td>
+    <td class="sem ${p._semG.clase}">${dot(p._semG.clase)}${p._semG.txt}</td>
+    <td class="sem ${p._semR.clase}">${dot(p._semR.clase)}${p._semR.txt}</td>
     <td><button class="btn btn-sm epm-btn py-0" onclick="verHist('${esc(p.nombre).replace(/'/g,"\\'")}')">🗓️</button></td>
   </tr>`;
 }
@@ -529,8 +552,8 @@ function verHist(nombre){
         ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
         &nbsp;|&nbsp; <b>Estado actual:</b> ${esc(p._estadoActual)} &nbsp;|&nbsp; <b>Radicaciones:</b> ${p._radicaciones}
       </div>
-      <div class="mt-2"><span class="sem ${p._semG.clase}">Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
-      <span class="sem ${p._semR.clase}">Riesgo: ${p._semR.txt}</span></div>
+      <div class="mt-2"><span class="sem ${p._semG.clase}">${dot(p._semG.clase)}Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
+      <span class="sem ${p._semR.clase}">${dot(p._semR.clase)}Riesgo: ${p._semR.txt}</span></div>
     </div>
   </div>`;
   const hist=p.historial||[];

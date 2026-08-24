@@ -1,20 +1,20 @@
 # Logos oficiales de las autoridades
 
-El dashboard (`Plataforma_PNAs.html`) muestra **una insignia profesional** por autoridad
-(con el nombre y los colores institucionales). Si quieres que aparezca el **logo oficial**
-en lugar de la insignia, coloca aquí el archivo de imagen con **exactamente** estos nombres
-(formato PNG con fondo transparente recomendado):
+El dashboard (`Plataforma_PNAs.html`) usa los **logos oficiales** si los colocas en la
+**raíz del repositorio** (junto al `Plataforma_PNAs.html`), con **exactamente** estos nombres
+(PNG con fondo transparente recomendado):
 
-| Autoridad | Archivo esperado |
+| Autoridad | Archivo esperado (en la raíz) |
 |---|---|
-| INVIAS | `invias.png` |
-| ANI | `ani.png` |
-| Gobernación de Antioquia | `gobernacion.png` |
-| Secretaría de Movilidad (municipios) | `municipio.png` (genérico) |
-| EPM | `epm.png` |
+| INVIAS | `Logo_INVIAS.png` |
+| ANI | `Logo_ANI.png` |
+| Gobernación de Antioquia | `Logo_Gob.png` |
+| EPM | `Logo_EPM.png` |
+| Secretaría de Movilidad (municipios) | *genérico automático* (no requiere archivo) |
 
-En cuanto el archivo exista, el dashboard usa el logo oficial automáticamente; si no está,
-muestra la insignia de respaldo (nunca se ve un enlace roto).
+En cuanto el archivo exista en la raíz, el dashboard muestra el logo oficial automáticamente;
+si no está, muestra una insignia de respaldo (nunca se ve un enlace roto). Para los municipios
+se genera un **emblema genérico estandarizado** con el nombre del municipio.
 
 ## De dónde descargar los oficiales
 - INVIAS: https://www.invias.gov.co/publicaciones/4229/simbolos-institucionales/
