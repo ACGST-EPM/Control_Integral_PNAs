@@ -66,18 +66,19 @@
           <b>🔒 La edición está protegida con clave de administrador.</b> Guarda el JSON exportado como <code>proyectos_db.json</code> en el repositorio para conservarlo.</p>
           <div class="table-responsive" style="max-height:220px; overflow:auto">
             <table class="table table-sm table-striped mb-2">
-              <thead class="table-dark"><tr><th>Código Banco</th><th>Proyecto</th><th>Estado</th><th>Fase</th><th>Municipio</th><th>Contrato</th><th></th></tr></thead>
+              <thead class="table-dark"><tr><th>Código Banco</th><th>Proyecto</th><th>Negocio</th><th>Estado</th><th>Fase</th><th>Municipio</th><th>Contrato</th><th></th></tr></thead>
               <tbody id="dbBody"></tbody>
             </table>
           </div>
           <div class="row g-1">
-            <div class="col-2"><input id="nCodBanco" class="form-control form-control-sm" placeholder="Código Banco"></div>
-            <div class="col-2"><input id="nProy" class="form-control form-control-sm" placeholder="Proyecto"></div>
-            <div class="col-2"><select id="nEstado" class="form-select form-select-sm"></select></div>
-            <div class="col-2"><select id="nFase" class="form-select form-select-sm"></select></div>
-            <div class="col-2"><select id="nMun" class="form-select form-select-sm"></select></div>
-            <div class="col-2"><input id="nContrato" class="form-control form-control-sm" placeholder="Contrato"></div>
-            <div class="col-12 mt-1 text-end"><button id="btnAddDB" class="btn btn-sm epm-btn-green" onclick="addDB()" disabled>+ Agregar proyecto</button></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Código Banco</label><input id="nCodBanco" class="form-control form-control-sm" placeholder="Código Banco"></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Proyecto</label><input id="nProy" class="form-control form-control-sm" placeholder="Proyecto"></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Negocio</label><select id="nNegocio" class="form-select form-select-sm"></select></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Estado</label><select id="nEstado" class="form-select form-select-sm"></select></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Fase</label><select id="nFase" class="form-select form-select-sm"></select></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Municipio</label><select id="nMun" class="form-select form-select-sm"></select></div>
+            <div class="col-6 col-md-4 col-lg-3"><label class="mini">Contrato</label><input id="nContrato" class="form-control form-control-sm" placeholder="Contrato"></div>
+            <div class="col-6 col-md-4 col-lg-3 d-flex align-items-end"><button id="btnAddDB" class="btn btn-sm epm-btn-green w-100" onclick="addDB()" disabled>+ Agregar proyecto</button></div>
           </div>
         </div>
       </div>
@@ -115,7 +116,8 @@
             <select id="fProyecto" class="form-select form-select-sm" onchange="autoLlenarProyecto()"></select>
           </div>
           <div class="row g-1 mb-2">
-            <div class="col-12"><label class="req-label">Código Banco</label><input id="fCodBanco" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col-6"><label class="req-label">Código Banco</label><input id="fCodBanco" class="form-control form-control-sm auto-field" readonly></div>
+            <div class="col-6"><label class="req-label">Negocio</label><input id="fNegocio" class="form-control form-control-sm auto-field" readonly></div>
           </div>
           <div class="row g-1 mb-2">
             <div class="col"><label class="req-label">Estado</label><input id="fEstado" class="form-control form-control-sm auto-field" readonly></div>
@@ -241,6 +243,7 @@ const CATALOGO_SEED = {
     estado_proyecto: ["Identificación","Formulación","Ejecución","Terminación","Evaluación"],
     fase_proyecto: ["Iniciativa","Idea","Prefactibilidad","Factibilidad","Planeación Ejecución","Diseño","Desarrollo","Puesta en Servicio","Cierre","Operación","Desmantelación"],
     municipios: ["Barbosa","Girardota","Copacabana","Bello","Medellín","Itagüí","Envigado","Sabaneta","Caldas","La Estrella"],
+    negocios: ["Ger_Acueducto-Alcantarillado","Ger_Gas","Ger_Transmisión-Distribución","Ger_Generación"],
     geometrias_permitidas: ["punto","linea","poligono"]
   },
   permisos: [
@@ -282,7 +285,7 @@ function aplicarLock(){
   const btn=document.getElementById('btnLock');
   btn.textContent = dbUnlocked? '🔓 Bloquear edición' : '🔒 Desbloquear edición';
   btn.className   = 'btn btn-sm fw-bold '+(dbUnlocked?'btn-success':'btn-warning');
-  ['btnImportDB','btnAddDB','nCodBanco','nProy','nEstado','nFase','nMun','nContrato'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!dbUnlocked; });
+  ['btnImportDB','btnAddDB','nCodBanco','nProy','nNegocio','nEstado','nFase','nMun','nContrato'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=!dbUnlocked; });
   renderDB();
 }
 
@@ -344,6 +347,7 @@ function normalizeDB(db){
   return (db||[]).map(r=>({
     codigo_banco: r.codigo_banco||r['Código_Banco']||'',
     proyecto: r.proyecto||'',
+    negocio: r.negocio||'',
     estado: r.estado||'',
     fase: r.fase||'',
     municipio: r.municipio||'',
@@ -364,6 +368,7 @@ function renderListasComunes(){
   document.getElementById('nEstado').innerHTML = opts(L.estado_proyecto, 'Estado');
   document.getElementById('nFase').innerHTML   = opts(L.fase_proyecto, 'Fase');
   document.getElementById('nMun').innerHTML    = opts(L.municipios, 'Municipio');
+  document.getElementById('nNegocio').innerHTML= opts((L.negocios||CATALOGO_SEED.listas_comunes.negocios), 'Negocio');
 }
 function renderPNASelect(){
   const s=document.getElementById('fPNA'); const prev=s.value;
@@ -378,10 +383,10 @@ function permisoDe(pna){ return (CAT.permisos||[]).find(p=>p.pna===pna); }
    =========================================================== */
 function renderDB(){
   const b = document.getElementById('dbBody'); b.innerHTML='';
-  if(!DB.length){ b.innerHTML='<tr><td colspan="7" class="text-center mini py-2">Sin proyectos en la base.</td></tr>'; guardarLocal(); return; }
+  if(!DB.length){ b.innerHTML='<tr><td colspan="8" class="text-center mini py-2">Sin proyectos en la base.</td></tr>'; guardarLocal(); return; }
   DB.forEach((r,i)=>{
     b.innerHTML += `<tr>
-      <td><b>${esc(r.codigo_banco)}</b></td><td>${esc(r.proyecto)}</td><td>${esc(r.estado)}</td>
+      <td><b>${esc(r.codigo_banco)}</b></td><td>${esc(r.proyecto)}</td><td>${esc(r.negocio)}</td><td>${esc(r.estado)}</td>
       <td>${esc(r.fase)}</td><td>${esc(r.municipio)}</td><td>${esc(r.contrato)}</td>
       <td style="white-space:nowrap">${dbUnlocked ? `<button class="btn btn-sm epm-btn py-0 me-1" onclick="editDB(${i})" title="Editar">✏️</button><button class="btn btn-sm btn-outline-danger py-0" onclick="delDB(${i})" title="Eliminar">🗑</button>` : '<span class="mini">🔒</span>'}</td></tr>`;
   });
@@ -391,23 +396,23 @@ let dbEditIdx = null;   // índice del proyecto que se está editando (null = ag
 function editDB(i){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
   const r=DB[i];
-  set('nCodBanco', r.codigo_banco); set('nProy', r.proyecto); set('nEstado', r.estado); set('nFase', r.fase); set('nMun', r.municipio); set('nContrato', r.contrato);
+  set('nCodBanco', r.codigo_banco); set('nProy', r.proyecto); set('nNegocio', r.negocio||''); set('nEstado', r.estado); set('nFase', r.fase); set('nMun', r.municipio); set('nContrato', r.contrato);
   dbEditIdx=i;
   const btn=document.getElementById('btnAddDB'); btn.textContent='💾 Actualizar proyecto'; btn.classList.remove('epm-btn-green'); btn.classList.add('epm-btn');
 }
 function resetDBForm(){
   ['nCodBanco','nProy','nContrato'].forEach(x=>document.getElementById(x).value='');
-  ['nEstado','nFase','nMun'].forEach(x=>document.getElementById(x).selectedIndex=0);
+  ['nNegocio','nEstado','nFase','nMun'].forEach(x=>document.getElementById(x).selectedIndex=0);
   dbEditIdx=null;
   const btn=document.getElementById('btnAddDB'); if(btn){ btn.textContent='+ Agregar proyecto'; btn.classList.add('epm-btn-green'); btn.classList.remove('epm-btn'); }
 }
 function addDB(){
   if(!dbUnlocked){ alert('Debes desbloquear la edición con la clave de administrador.'); return; }
-  const cb=val('nCodBanco').trim(), p=val('nProy').trim(), es=val('nEstado'), fa=val('nFase'), mu=val('nMun'), co=val('nContrato').trim();
+  const cb=val('nCodBanco').trim(), p=val('nProy').trim(), ne=val('nNegocio'), es=val('nEstado'), fa=val('nFase'), mu=val('nMun'), co=val('nContrato').trim();
   if(!cb || !p){ alert('Código Banco y Proyecto son obligatorios.'); return; }
   // Código Banco único (excluyendo la fila que se está editando)
   if(DB.find((x,idx)=> x.codigo_banco===cb && idx!==dbEditIdx)){ alert('Ya existe otro proyecto con el Código Banco '+cb+'. El Código Banco debe ser único.'); return; }
-  const registro={codigo_banco:cb, proyecto:p, estado:es, fase:fa, municipio:mu, contrato:co};
+  const registro={codigo_banco:cb, proyecto:p, negocio:ne, estado:es, fase:fa, municipio:mu, contrato:co};
   if(dbEditIdx!=null){ DB[dbEditIdx]=registro; } else { DB.push(registro); }
   resetDBForm();
   renderDB(); renderProyectoSelect();
@@ -431,7 +436,7 @@ function renderProyectoSelect(){
 }
 function autoLlenarProyecto(){
   const cb=val('fProyecto'); const r=DB.find(x=>x.codigo_banco===cb) || {};
-  set('fCodBanco', r.codigo_banco||''); set('fEstado', r.estado||'');
+  set('fCodBanco', r.codigo_banco||''); set('fNegocio', r.negocio||''); set('fEstado', r.estado||'');
   set('fFase', r.fase||''); set('fMunicipio', r.municipio||''); set('fContrato', r.contrato||'');
   actualizarNombre();
 }
@@ -602,7 +607,7 @@ async function importarGeom(file){
     else return;
     const t=nuevoTrazadoVacio();
     t.nombre=nombre; t.geomType=geomType; t.coords=coords;
-    t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||''; t.frente=meta.frente||'';
+    t.codigo_banco=meta.codigo_banco||''; t.proyecto=meta.proyecto||''; t.negocio=meta.negocio||''; t.frente=meta.frente||'';
     t.estado=meta.estado||''; t.fase=meta.fase||''; t.municipio=meta.municipio||''; t.contrato=meta.contrato||'';
     t.pna=meta.pna||''; t.concesion=meta.concesion||'';
     t.fecha_limite_requerida=meta.fecha_limite_requerida||''; t.holgura_dias=meta.holgura_dias||'';
@@ -624,13 +629,13 @@ async function importarGeom(file){
    FORMULARIO ↔ TRAZADO
    =========================================================== */
 function nuevoTrazadoVacio(){
-  return {nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', frente:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', fecha_limite_requerida:'', holgura_dias:'', historial:[], _uid:idSeq++};
+  return {nombre:'', geomType:null, coords:[], codigo_banco:'', proyecto:'', negocio:'', frente:'', estado:'', fase:'', municipio:'', contrato:'', pna:'', concesion:'', fecha_limite_requerida:'', holgura_dias:'', historial:[], _uid:idSeq++};
 }
 function cargarEnForm(t){
   editandoId=t._uid;
   // intenta seleccionar el proyecto por Código Banco
   if(t.codigo_banco && DB.find(x=>x.codigo_banco===t.codigo_banco)){ set('fProyecto',t.codigo_banco); autoLlenarProyecto(); }
-  else { set('fProyecto',''); set('fCodBanco',t.codigo_banco); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
+  else { set('fProyecto',''); set('fCodBanco',t.codigo_banco); set('fNegocio',t.negocio||''); set('fEstado',t.estado); set('fFase',t.fase); set('fMunicipio',t.municipio); set('fContrato',t.contrato); }
   set('fFrente',t.frente||'');
   set('fPNA',t.pna); autoLlenarPNA(); set('fConcesion',t.concesion);
   set('fLimite',t.fecha_limite_requerida||''); set('fHolgura',t.holgura_dias||'');
@@ -645,8 +650,8 @@ function guardarTrazado(){
   // Datos de identidad: si se eligió un proyecto de la base, se copian de allí;
   // si no (p. ej. permiso importado sin proyecto en la base), se conservan los que ya trae.
   const pr=DB.find(x=>x.codigo_banco===val('fProyecto'));
-  if(pr){ t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
-  else { t.codigo_banco=val('fCodBanco').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
+  if(pr){ t.codigo_banco=pr.codigo_banco; t.proyecto=pr.proyecto; t.negocio=pr.negocio||''; t.estado=pr.estado; t.fase=pr.fase; t.municipio=pr.municipio; t.contrato=pr.contrato; }
+  else { t.codigo_banco=val('fCodBanco').trim(); t.negocio=val('fNegocio').trim(); t.estado=val('fEstado').trim(); t.fase=val('fFase').trim(); t.municipio=val('fMunicipio').trim(); t.contrato=val('fContrato').trim(); /* t.proyecto se conserva */ }
   t.pna=val('fPNA'); t.concesion=val('fConcesion').trim().replace(/\|/g,'/');
   actualizarNombre(); t.nombre=val('fNombre').trim();
   t.fecha_limite_requerida=val('fLimite'); t.holgura_dias=val('fHolgura').trim();
@@ -803,6 +808,7 @@ function construirDescripcion(t){
   const partes=[
     `codigo_banco: ${t.codigo_banco}`,
     `proyecto: ${t.proyecto}`,
+    `negocio: ${t.negocio||''}`,
     `frente: ${t.frente||''}`,
     `estado: ${t.estado}`,
     `fase: ${t.fase}`,
@@ -825,7 +831,7 @@ function construirDescripcion(t){
    =========================================================== */
 function parseDescripcion(desc){
   const out={};
-  const campos=['codigo_banco','proyecto','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
+  const campos=['codigo_banco','proyecto','negocio','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
   campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
   const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
   if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }

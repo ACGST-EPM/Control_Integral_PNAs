@@ -39,6 +39,12 @@
       "Caldas",
       "La Estrella"
     ],
+    "negocios": [
+      "Ger_Acueducto-Alcantarillado",
+      "Ger_Gas",
+      "Ger_Transmisión-Distribución",
+      "Ger_Generación"
+    ],
     "geometrias_permitidas": ["punto", "linea", "poligono"]
   },
 

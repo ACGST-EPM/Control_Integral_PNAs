@@ -92,21 +92,27 @@
 
   <!-- GRÁFICOS -->
   <div class="row g-2 mb-3">
-    <div class="col-12 col-md-4">
-      <div class="chart-card text-center">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="chart-card text-center h-100">
         <div class="chart-title">Avance promedio del trámite</div>
         <div id="donaAvance"></div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
-      <div class="chart-card">
-        <div class="chart-title">Permisos por estado de trámite</div>
-        <div id="distEstado"></div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="chart-card h-100">
+        <div class="chart-title">Permisos por Proyecto</div>
+        <div id="porProyecto" style="max-height:190px; overflow:auto"></div>
       </div>
     </div>
-    <div class="col-12 col-md-4">
-      <div class="chart-card">
-        <div class="chart-title">Permisos por autoridad</div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="chart-card h-100">
+        <div class="chart-title">Permisos por Negocio</div>
+        <div id="distNegocio"></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="chart-card h-100">
+        <div class="chart-title">Permisos por Autoridad</div>
         <div id="distAutoridad"></div>
       </div>
     </div>
@@ -122,8 +128,12 @@
             <div class="col-6"><label class="mini fw-bold">Tipo de permiso (PNA)</label><select id="fPNA" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Autoridad</label><select id="fAut" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Municipio</label><select id="fMun" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Negocio</label><select id="fNeg" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Frente</label><select id="fFrn" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Estado actual</label><select id="fEst" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-12"><label class="mini fw-bold">Proyecto</label><select id="fProy" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Riesgo</label><select id="fRie" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Estado de gestión</label><select id="fGes" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Proyecto</label><select id="fProy" class="form-select form-select-sm" multiple></select></div>
             <div class="col-12"><button id="btnLimpiar" class="btn btn-sm epm-btn w-100">🧹 Limpiar filtros</button></div>
           </div>
         </div>
@@ -132,6 +142,36 @@
     <div class="col-12 col-lg-8">
       <div id="map"></div>
       <div class="leyenda mt-2" id="leyenda"></div>
+      <!-- RECORRIDO TEMPORAL: mueve la "fecha de análisis" y recalcula semáforos e itinerancia como si HOY fuera esa fecha -->
+      <div class="card mt-2" style="border-color:var(--epm-lima)">
+        <div class="epm-card-header py-1">🕑 Recorrido temporal
+          <span class="mini fw-normal">— analiza la gestión en una fecha dada (semáforos e itinerancia se recalculan)</span>
+        </div>
+        <div class="card-body py-2">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3"><label class="mini fw-bold">Inicio recorrido</label><input type="date" id="rtIni" class="form-control form-control-sm"></div>
+            <div class="col-6 col-md-3"><label class="mini fw-bold">Fin recorrido</label><input type="date" id="rtFin" class="form-control form-control-sm"></div>
+            <div class="col-6 col-md-3"><label class="mini fw-bold">Avanzar cada</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="rtPaso" class="form-control form-control-sm" value="7" min="1">
+                <select id="rtUnidad" class="form-select form-select-sm"><option value="dias">días</option><option value="semanas" selected>semanas</option><option value="meses">meses</option></select>
+              </div>
+            </div>
+            <div class="col-6 col-md-3"><label class="mini fw-bold">Velocidad</label>
+              <select id="rtVel" class="form-select form-select-sm"><option value="1500">Lenta</option><option value="800" selected>Media</option><option value="350">Rápida</option></select>
+            </div>
+            <div class="col-12">
+              <input type="range" id="rtSlider" class="form-range" min="0" max="0" step="1" value="0" disabled>
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+              <button id="rtPlay" class="btn btn-sm epm-btn-green">▶ Iniciar recorrido</button>
+              <button id="rtStop" class="btn btn-sm epm-btn" disabled>⏹ Detener</button>
+              <button id="rtReset" class="btn btn-sm btn-outline-secondary">↩ Volver a hoy</button>
+              <span class="ms-auto mini fw-bold">Fecha de análisis: <span id="rtFecha" class="badge bg-secondary">hoy</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -233,7 +273,10 @@ function diasHabilesEntre(a,b){
   }
   return count;
 }
-function hoy(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+/* Fecha de análisis del recorrido temporal: null = fecha real de hoy.
+   Al fijarla, TODOS los cálculos (semáforos e itinerancia) se comportan como si "hoy" fuera esa fecha. */
+let FECHA_ANALISIS = null;
+function hoy(){ const d = FECHA_ANALISIS ? new Date(FECHA_ANALISIS) : new Date(); d.setHours(0,0,0,0); return d; }
 function calcularVencimiento(start, tg){ if(!tg) return null; return tg.unidad==='dias_habiles' ? addBusinessDays(start, tg.valor) : addMonths(start, tg.valor); }
 /* Resta el plazo de gestión a una fecha (para la fecha máxima de inicio de radicación). */
 function restarPlazo(fecha, tg){
@@ -324,6 +367,9 @@ function calcular(p){
   p._listo = listo;
   p._radicaciones = radicaciones;
   p._semG = semG; p._semR = semR;
+  // Categorías cortas (sin el paréntesis de días) para los filtros
+  p._gestionCat = (semG.txt||'').replace(/\s*\(.*$/,'');
+  p._riesgoCat  = (semR.txt||'').replace(/\s*\(.*$/,'');
   p._autoridad = perm.autoridad || p.autoridad || '';
   p._color = perm.color || '#009300';
   return p;
@@ -332,7 +378,7 @@ function calcular(p){
 /* ================= PARSEO DE KMZ/KML ================= */
 function parseDescripcion(desc){
   const out={};
-  const campos=['codigo_banco','proyecto','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
+  const campos=['codigo_banco','proyecto','negocio','frente','estado','fase','municipio','contrato','pna','autoridad','tiempo_gestion','concesion','fecha_limite_requerida','holgura_dias'];
   campos.forEach(c=>{ const m=desc.match(new RegExp('(?:^|\\|)\\s*'+c+'\\s*:\\s*([^|]*)','i')); if(m) out[c]=m[1].trim(); });
   const mh=desc.match(/historial\s*:\s*(\[[\s\S]*\])\s*$/i);
   if(mh){ try{ out.historial=JSON.parse(mh[1]); }catch(e){ out.historial=[]; } }
@@ -423,26 +469,52 @@ function initMapa(){
 }
 const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935'};
 const ITIN_TXT = {verde:'Itinerancia lenta', amarillo:'Itinerancia media', rojo:'Itinerancia rápida'};
+/* Punto representativo de cualquier geometría (para el marcador SIEMPRE visible al alejar el zoom).
+   Punto→su coordenada; Línea→coordenada central; Polígono→centroide (promedio lat/lng). */
+function puntoRepresentativo(p){
+  const cs=p.coords; if(!cs||!cs.length) return null;
+  if(p.geomType==='Point') return cs[0];
+  if(p.geomType==='Polygon'){
+    let la=0,ln=0; cs.forEach(c=>{la+=c[0];ln+=c[1];}); return [la/cs.length, ln/cs.length];
+  }
+  return cs[Math.floor(cs.length/2)];   // LineString: coordenada del medio
+}
 function dibujarMapa(lista){
   capa.clearLayers(); const pts=[];
   lista.forEach(p=>{
     if(!p.coords||!p.coords.length) return;
-    // Contorno TITILANTE (itinerancia) para trámites sin radicar — se dibuja primero (debajo).
-    if(p._itinerancia && p._itinerancia.activa){
-      const it=p._itinerancia, colH=ITIN_COL[it.nivel], cls='pulse-'+it.nivel;
+    const col=p._color, rep=puntoRepresentativo(p);
+    const itAct = !!(p._itinerancia && p._itinerancia.activa);
+    const colH = itAct ? ITIN_COL[p._itinerancia.nivel] : null;
+    const cls  = itAct ? 'pulse-'+p._itinerancia.nivel : '';
+    // 1) Contorno TITILANTE (itinerancia) sobre la geometría real — se dibuja primero (debajo).
+    if(itAct){
       let halo;
       if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:13,color:colH,weight:3,fill:false,className:cls});
       else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:5,fill:false,className:cls});
       else halo=L.polyline(p.coords,{color:colH,weight:9,opacity:1,className:cls});
       capa.addLayer(halo);
     }
-    let lyr; const col=p._color;
+    // 2) Geometría base (línea / polígono / punto) con el color del tipo de permiso.
+    let lyr;
     if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:6,color:col,fillColor:col,fillOpacity:.9});
     else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:2,fillOpacity:.25});
     else lyr=L.polyline(p.coords,{color:col,weight:5});
-    const itInfo = (p._itinerancia && p._itinerancia.activa) ? ('<br><span style="color:'+ITIN_COL[p._itinerancia.nivel]+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. '+(p._itinerancia.base==='radicación'?'para radicar':'al límite')+')</span>') : '';
-    lyr.bindPopup('<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual)+itInfo);
+    const itInfo = itAct ? ('<br><span style="color:'+colH+';font-weight:bold">◉ '+ITIN_TXT[p._itinerancia.nivel]+' ('+p._itinerancia.dh+' d.háb. '+(p._itinerancia.base==='radicación'?'para radicar':'al límite')+')</span>') : '';
+    const popup = '<b>'+esc(p.nombre)+'</b><br>'+esc(p.pna||'')+' · '+esc(p._autoridad||'')+'<br>Estado: '+esc(p._estadoActual)+itInfo;
+    lyr.bindPopup(popup);
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
+    // 3) Marcador SIEMPRE VISIBLE (tamaño fijo en píxeles a cualquier zoom) en el punto representativo,
+    //    para que líneas y polígonos NO desaparezcan al alejar el zoom. Solo para geometrías no puntuales.
+    if(rep && p.geomType!=='Point'){
+      if(itAct){   // anillo titilante de itinerancia acompañando el marcador
+        const ring=L.circleMarker(rep,{radius:11,color:colH,weight:3,fill:false,className:cls});
+        capa.addLayer(ring);
+      }
+      const mk=L.circleMarker(rep,{radius:6,color:'#fff',weight:2,fillColor:col,fillOpacity:1});
+      mk.bindPopup(popup);
+      capa.addLayer(mk);
+    }
   });
   if(pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
 }
@@ -490,6 +562,35 @@ function renderDist(elId, pairs, colorFn){
 function conteo(lista, campo){
   const m={}; lista.forEach(p=>{ const k=p[campo]||'—'; m[k]=(m[k]||0)+1; });
   return Object.keys(m).map(k=>[k,m[k]]).sort((a,b)=>b[1]-a[1]);
+}
+function negocioColor(n){
+  n=(n||'').toLowerCase();
+  if(n.includes('acueducto')) return '#1565C0';
+  if(n.includes('gas'))       return '#d5a000';
+  if(n.includes('transmis'))  return '#00897B';
+  if(n.includes('generac'))   return '#2E7D32';
+  return '#6c757d';
+}
+function nivelToClase(n){ return n==='verde'?'sem-verde':(n==='amarillo'?'sem-amarillo':(n==='rojo'?'sem-rojo':'sem-gris')); }
+/* Panel "Permisos por Proyecto": estado actual + semáforo de inicio (itinerancia) y de obtención (riesgo) */
+function renderPorProyecto(lista){
+  const box=document.getElementById('porProyecto');
+  if(!lista.length){ box.innerHTML='<i class="mini">Sin datos.</i>'; return; }
+  const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
+  let html='<div class="mini text-muted mb-1">● inicio &nbsp; ● obtención</div>';
+  Object.keys(grupos).sort().forEach(proy=>{
+    html += `<div class="mini fw-bold text-success mt-1" style="border-bottom:1px solid #e9ecef">${esc(proy)}</div>`;
+    grupos[proy].forEach(p=>{
+      const inicioClase = (p._itinerancia&&p._itinerancia.activa) ? nivelToClase(p._itinerancia.nivel) : (p._listo?'sem-verde':'sem-gris');
+      html += `<div class="dist-row" style="gap:6px">
+        <span class="lbl" style="width:auto;flex:1;text-align:left" title="${esc(p.frente||'')} · ${esc(p.pna||'')}">${esc(p.frente||p.nombre)} <span class="mini">(${esc(p.pna||'')})</span></span>
+        <span class="mini" style="width:auto;color:#495057">${esc(p._estadoActual)}</span>
+        <span title="Riesgo de inicio (itinerancia): ${esc(inicioClase)}">${dot(inicioClase)}</span>
+        <span title="Riesgo de obtención: ${esc(p._riesgoCat)}">${dot(p._semR.clase)}</span>
+      </div>`;
+    });
+  });
+  box.innerHTML=html;
 }
 
 /* ================= INSIGNIAS / LOGOS DE AUTORIDAD ================= */
@@ -540,20 +641,29 @@ function llenarFiltro(id, valores){
   Array.from(new Set(valores.filter(Boolean))).sort().forEach(v=> s.append(new Option(v,v, prev.includes(v), prev.includes(v))));
   s.trigger('change.select2');
 }
+const FILTROS_SEL = '#fPNA,#fAut,#fNeg,#fMun,#fFrn,#fEst,#fRie,#fGes,#fProy';
 function refrescarFiltros(){
   llenarFiltro('fPNA', PERMISOS.map(p=>p.pna));
   llenarFiltro('fAut', PERMISOS.map(p=>p._autoridad));
+  llenarFiltro('fNeg', PERMISOS.map(p=>p.negocio));
   llenarFiltro('fMun', PERMISOS.map(p=>p.municipio));
+  llenarFiltro('fFrn', PERMISOS.map(p=>p.frente));
   llenarFiltro('fEst', PERMISOS.map(p=>p._estadoActual));
+  llenarFiltro('fRie', PERMISOS.map(p=>p._riesgoCat));
+  llenarFiltro('fGes', PERMISOS.map(p=>p._gestionCat));
   llenarFiltro('fProy',PERMISOS.map(p=>p.proyecto));
 }
 function pasaFiltros(p){
   const g=(id)=> ($('#'+id).val()||[]).filter(Boolean);
-  const fP=g('fPNA'), fA=g('fAut'), fM=g('fMun'), fE=g('fEst'), fPr=g('fProy');
+  const fP=g('fPNA'), fA=g('fAut'), fN=g('fNeg'), fM=g('fMun'), fF=g('fFrn'), fE=g('fEst'), fR=g('fRie'), fG=g('fGes'), fPr=g('fProy');
   if(fP.length && !fP.includes(p.pna)) return false;
   if(fA.length && !fA.includes(p._autoridad)) return false;
+  if(fN.length && !fN.includes(p.negocio)) return false;
   if(fM.length && !fM.includes(p.municipio)) return false;
+  if(fF.length && !fF.includes(p.frente)) return false;
   if(fE.length && !fE.includes(p._estadoActual)) return false;
+  if(fR.length && !fR.includes(p._riesgoCat)) return false;
+  if(fG.length && !fG.includes(p._gestionCat)) return false;
   if(fPr.length && !fPr.includes(p.proyecto)) return false;
   return true;
 }
@@ -578,7 +688,8 @@ function refrescarTodo(){
   // Gráficos
   const prom = lista.length ? Math.round(lista.reduce((s,p)=>s+(p._avance||0),0)/lista.length) : 0;
   document.getElementById('donaAvance').innerHTML = donutSVG(prom, 130);
-  renderDist('distEstado', conteo(lista,'_estadoActual'));
+  renderPorProyecto(lista);
+  renderDist('distNegocio', conteo(lista,'negocio'), negocioColor);
   renderDist('distAutoridad', conteo(lista,'_autoridad'), a=>autInfo(a).color);
   refrescarFiltros();
 }
@@ -612,14 +723,94 @@ function verHist(nombre){
   new bootstrap.Modal(document.getElementById('modalHist')).show();
 }
 
+/* ================= RECORRIDO TEMPORAL ================= */
+/* Fija la fecha de análisis (Date o null=hoy), recalcula semáforos/itinerancia y refresca todo. */
+function aplicarFechaAnalisis(fecha){
+  FECHA_ANALISIS = fecha ? new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate()) : null;
+  PERMISOS.forEach(calcular);
+  const badge=document.getElementById('rtFecha');
+  const isoLocal = d=> d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  badge.textContent = FECHA_ANALISIS ? fmtDMY(isoLocal(FECHA_ANALISIS)) : 'hoy';
+  badge.className = 'badge ' + (FECHA_ANALISIS ? 'bg-warning text-dark' : 'bg-secondary');
+  refrescarTodo();
+}
+let RT_TIMER=null, RT_FECHAS=[], RT_IDX=0;
+function rtStep(dias, unidad){ // paso en días equivalentes
+  if(unidad==='semanas') return dias*7;
+  if(unidad==='meses')   return dias*30;   // aproximación calendario
+  return dias;
+}
+/* Construye la secuencia de fechas del recorrido según inicio/fin/paso. */
+function rtConstruirFechas(){
+  const vi=document.getElementById('rtIni').value, vf=document.getElementById('rtFin').value;
+  if(!vi||!vf) return [];
+  let a=new Date(vi+'T00:00:00'), b=new Date(vf+'T00:00:00');
+  if(a>b){ const t=a;a=b;b=t; }
+  const paso=Math.max(1, parseInt(document.getElementById('rtPaso').value)||1);
+  const uni=document.getElementById('rtUnidad').value;
+  const fechas=[]; let cur=new Date(a);
+  while(cur<=b){
+    fechas.push(new Date(cur));
+    if(uni==='meses') cur.setMonth(cur.getMonth()+paso);
+    else cur.setDate(cur.getDate()+rtStep(paso,uni));
+  }
+  if(!fechas.length || fechas[fechas.length-1].getTime()!==b.getTime()) fechas.push(new Date(b));
+  return fechas;
+}
+function rtActualizarSliderUI(){
+  const s=document.getElementById('rtSlider');
+  s.max = Math.max(0, RT_FECHAS.length-1);
+  s.disabled = RT_FECHAS.length===0;
+  s.value = RT_IDX;
+}
+function rtIrA(idx){
+  if(!RT_FECHAS.length) return;
+  RT_IDX = Math.max(0, Math.min(RT_FECHAS.length-1, idx));
+  document.getElementById('rtSlider').value = RT_IDX;
+  aplicarFechaAnalisis(RT_FECHAS[RT_IDX]);
+}
+function rtPlay(){
+  RT_FECHAS = rtConstruirFechas();
+  if(RT_FECHAS.length<2){ alert('Define un inicio y un fin de recorrido válidos.'); return; }
+  rtActualizarSliderUI();
+  RT_IDX = 0; rtIrA(0);
+  document.getElementById('rtPlay').disabled=true;
+  document.getElementById('rtStop').disabled=false;
+  const vel=parseInt(document.getElementById('rtVel').value)||800;
+  RT_TIMER=setInterval(()=>{
+    if(RT_IDX>=RT_FECHAS.length-1){ rtStop(); return; }
+    rtIrA(RT_IDX+1);
+  }, vel);
+}
+function rtStop(){
+  if(RT_TIMER){ clearInterval(RT_TIMER); RT_TIMER=null; }
+  document.getElementById('rtPlay').disabled=false;
+  document.getElementById('rtStop').disabled=true;
+}
+function rtReset(){
+  rtStop(); RT_FECHAS=[]; RT_IDX=0; rtActualizarSliderUI();
+  aplicarFechaAnalisis(null);
+}
+
 /* ================= UTILIDADES ================= */
 function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ================= ARRANQUE ================= */
 $(document).ready(async function(){
-  $('#fPNA,#fAut,#fMun,#fEst,#fProy').select2({theme:'bootstrap-5', placeholder:'Todos', allowClear:true, closeOnSelect:false, width:'100%'});
-  $('#fPNA,#fAut,#fMun,#fEst,#fProy').on('change', refrescarTodo);
-  $('#btnLimpiar').on('click', function(){ $('#fPNA,#fAut,#fMun,#fEst,#fProy').val(null).trigger('change'); });
+  $(FILTROS_SEL).select2({theme:'bootstrap-5', placeholder:'Todos', allowClear:true, closeOnSelect:false, width:'100%'});
+  $(FILTROS_SEL).on('change', refrescarTodo);
+  $('#btnLimpiar').on('click', function(){ $(FILTROS_SEL).val(null).trigger('change'); });
+  // Recorrido temporal
+  document.getElementById('rtPlay').addEventListener('click', rtPlay);
+  document.getElementById('rtStop').addEventListener('click', rtStop);
+  document.getElementById('rtReset').addEventListener('click', rtReset);
+  document.getElementById('rtSlider').addEventListener('input', function(){ rtStop(); rtIrA(parseInt(this.value)||0); });
+  // Fechas por defecto del recorrido: de hoy a hoy + 6 meses
+  (function(){
+    const h=new Date(); const f=new Date(); f.setMonth(f.getMonth()+6);
+    document.getElementById('rtIni').value = h.toISOString().slice(0,10);
+    document.getElementById('rtFin').value = f.toISOString().slice(0,10);
+  })();
   initMapa();
   // catálogo
   try{ const r=await fetch('tipos_permiso.json',{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(j&&j.permisos) CAT=j; } }catch(e){}
