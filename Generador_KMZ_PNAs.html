@@ -173,10 +173,10 @@
                   <label class="form-check-label mini" for="hCulminado">Este estado ya <b>culminó</b> (habilita fecha y radicado de respuesta)</label>
                 </div>
               </div>
-              <div class="col-6"><label class="mini">Radicado (radicación)</label><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
-              <div class="col-6"><label class="mini">Radicado de respuesta</label><input id="hRadResp" class="form-control form-control-sm" placeholder="Radicado de respuesta"></div>
-              <div class="col-6"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
-              <div class="col-6"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
+              <div class="col-6" id="cRadic"><label class="mini">Radicado (radicación)</label><input id="hRadicado" class="form-control form-control-sm" placeholder="Radicado"></div>
+              <div class="col-6" id="cRadResp"><label class="mini">Radicado de respuesta</label><input id="hRadResp" class="form-control form-control-sm" placeholder="Radicado de respuesta"></div>
+              <div class="col-6" id="cFRad"><label class="mini">F. radicación</label><input id="hFRad" type="date" class="form-control form-control-sm"></div>
+              <div class="col-6" id="cFResp"><label class="mini">F. respuesta</label><input id="hFResp" type="date" class="form-control form-control-sm"></div>
               <div class="col-12"><input id="hObs" class="form-control form-control-sm" placeholder="Observación"></div>
               <div class="col-12 text-end mt-1"><button class="btn btn-sm epm-btn" onclick="addHist()">+ Agregar al historial</button></div>
             </div>
@@ -435,22 +435,23 @@ function autoLlenarPNA(){
 function ajustarCamposHist(){
   const p=permisoDe(val('fPNA')); const est=val('hEstado');
   const inclui=(lista)=> p && est && (lista||[]).includes(est);
-  // Radicado de radicación
-  const permiteRad = inclui(p&&p.radicado_en_estados);
-  const rad=document.getElementById('hRadicado');
-  rad.disabled=!permiteRad; rad.placeholder = permiteRad?'Radicado (radicación del usuario)':'No aplica → usa Radicado de respuesta';
-  if(!permiteRad) rad.value='';
-  // Casilla culminó
-  const culminable = inclui(p&&p.estados_culminables);
+  const permiteRad = inclui(p&&p.radicado_en_estados);      // el usuario radica
+  const culminable = inclui(p&&p.estados_culminables);      // estado de gestión que se culmina
   document.getElementById('boxCulminado').style.display = culminable ? '' : 'none';
   if(!culminable) document.getElementById('hCulminado').checked=false;
-  // F. respuesta + radicado de respuesta
   const respDirecta = inclui(p&&p.respuesta_en_estados);
-  const permiteResp = respDirecta || (culminable && document.getElementById('hCulminado').checked);
-  const fResp=document.getElementById('hFResp'), rResp=document.getElementById('hRadResp');
-  fResp.disabled=!permiteResp; rResp.disabled=!permiteResp;
-  rResp.placeholder = permiteResp?'Radicado de respuesta':'(disponible al culminar / responder)';
-  if(!permiteResp){ fResp.value=''; rResp.value=''; }
+  const permiteResp = respDirecta || (culminable && document.getElementById('hCulminado').checked); // responde la autoridad
+  // Se muestran SOLO los campos que aplican al estado:
+  //  - Radicación: Radicado + F. radicación (cuando radica el usuario).
+  //  - Respuesta:  Radicado de respuesta + F. respuesta (cuando responde la autoridad).
+  const mostrar=(boxId,inputId,ver)=>{
+    document.getElementById(boxId).style.display = ver ? '' : 'none';
+    const el=document.getElementById(inputId); if(el){ el.disabled=false; if(!ver) el.value=''; }
+  };
+  mostrar('cRadic','hRadicado', permiteRad);
+  mostrar('cFRad','hFRad',      permiteRad);
+  mostrar('cRadResp','hRadResp', permiteResp);
+  mostrar('cFResp','hFResp',     permiteResp);
 }
 
 /* ===========================================================
