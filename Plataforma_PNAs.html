@@ -331,10 +331,16 @@ async function parsearArchivo(file){
     }else{ return parsearKML(await file.text(), file.name); }
   }catch(e){ console.error('Error leyendo',file.name,e); return 0; }
 }
+/* Quita permisos repetidos (mismo nombre) que pudieran venir de un KMZ antiguo mal exportado. */
+function dedupePermisos(){
+  const seen={}, out=[];
+  for(let i=PERMISOS.length-1;i>=0;i--){ const k=(PERMISOS[i].nombre||'').trim()||('#'+i); if(seen[k]) continue; seen[k]=true; out.unshift(PERMISOS[i]); }
+  PERMISOS=out;
+}
 async function cargarArchivos(files){
   if(!files||!files.length) return;
-  let tot=0;
-  for(const f of files){ tot+=await parsearArchivo(f); }
+  for(const f of files){ await parsearArchivo(f); }
+  dedupePermisos();
   document.getElementById('fuente').textContent = PERMISOS.length+' permiso(s) cargado(s) (incluye carga manual).';
   refrescarTodo();
 }
@@ -359,6 +365,7 @@ async function cargarDesdeRepo(){
     }
     if(!urls.length){ document.getElementById('fuente').textContent='No se encontraron KMZ en el repositorio (carpeta 01_KMZ_Entrada). Usa "Cargar KMZ" para probar.'; return; }
     for(const u of urls){ try{ const b=await (await fetch(u+cb,{cache:'no-store'})).blob(); const f=new File([b], u.split('/').pop()); await parsearArchivo(f); }catch(e){} }
+    dedupePermisos();
     const ahora=new Date().toLocaleString('es-CO');
     document.getElementById('fuente').innerHTML=PERMISOS.length+' permiso(s) cargado(s) desde el repositorio · <span class="mini">última actualización: '+ahora+'</span>';
     refrescarTodo();

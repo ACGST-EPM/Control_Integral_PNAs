@@ -296,7 +296,24 @@ function cargarLocal(){
    siendo el almacén oficial y portable; esto es solo una red de seguridad local. */
 function guardarTrazadosLocal(){ try{ localStorage.setItem('pna_trazados', JSON.stringify(trazados)); }catch(e){} }
 function cargarTrazadosLocal(){
-  try{ const d=localStorage.getItem('pna_trazados'); if(d){ trazados=JSON.parse(d)||[]; trazados.forEach(t=>{ if(t._uid>=idSeq) idSeq=t._uid+1; }); } }catch(e){}
+  try{ const d=localStorage.getItem('pna_trazados'); if(d){ trazados=JSON.parse(d)||[]; trazados.forEach(t=>{ if(t && t._uid>=idSeq) idSeq=t._uid+1; }); } }catch(e){}
+  podarVacios(); dedupeTrazados();
+}
+/* Clave de identidad de un permiso: su nombre (PNA_CódigoBanco_Frente). */
+function claveTrazado(t){ return ((t.nombre||'').trim()) || ('__uid'+t._uid); }
+/* Elimina permisos duplicados (mismo nombre), conservando la ÚLTIMA versión (la más reciente). */
+function dedupeTrazados(){
+  const seen={}, out=[];
+  for(let i=trazados.length-1;i>=0;i--){
+    const t=trazados[i]; if(!t) continue;
+    const k=claveTrazado(t);
+    if(seen[k]) continue; seen[k]=true; out.unshift(t);
+  }
+  trazados=out;
+}
+/* Descarta trazos "fantasma" completamente vacíos (p. ej. una línea dibujada y nunca completada). */
+function podarVacios(){
+  trazados=(trazados||[]).filter(t=> t && ((t.nombre||'').trim() || t.pna || t.codigo_banco || t.frente || (t.historial&&t.historial.length)));
 }
 function nuevaSesion(){
   if(!trazados.length || confirm('Esto limpia los permisos cargados en esta sesión de trabajo.\nNo borra tus KMZ ya exportados ni la base de proyectos. ¿Continuar?')){
@@ -556,7 +573,7 @@ async function importarGeom(file){
   const dom = new DOMParser().parseFromString(kmlText, 'text/xml');
   const placemarks = getByLocal(dom, 'Placemark');
   if(!placemarks.length){ alert('No se encontraron trazados (Placemark) en el archivo.'); return; }
-  let importados=0;
+  const nuevos=[];
   placemarks.forEach(pm=>{
     const nombre = textLocal(pm,'name') || 'SIN_NOMBRE';
     const desc   = textLocal(pm,'description') || '';
@@ -574,10 +591,17 @@ async function importarGeom(file){
     t.pna=meta.pna||''; t.concesion=meta.concesion||'';
     t.fecha_limite_requerida=meta.fecha_limite_requerida||''; t.holgura_dias=meta.holgura_dias||'';
     t.historial = meta.historial || [];
-    trazados.push(t); importados++;
+    nuevos.push(t);
   });
+  if(!nuevos.length){ alert('No se encontraron trazados válidos en el archivo.'); return; }
+  // REEMPLAZO (no duplica): quita de la sesión los permisos con el mismo nombre que traiga el archivo.
+  const nombresImp = new Set(nuevos.map(t=>(t.nombre||'').trim()).filter(Boolean));
+  trazados = trazados.filter(t=>{ const n=(t.nombre||'').trim(); return !(n && nombresImp.has(n)); });
+  nuevos.forEach(t=>trazados.push(t));
+  editandoId=null;                 // evita que un "Guardar" posterior cree un duplicado
+  podarVacios(); dedupeTrazados();
   renderLista(); dibujarTodo(); validar(); ajustarVista();
-  alert(importados+' permiso(s) importado(s). Revisa cada uno en la tabla y complétalos si falta algo.');
+  alert(nuevos.length+' permiso(s) importado(s). Si el proyecto ya estaba en la sesión, se reemplazó por la versión del archivo (no se duplica).');
 }
 
 /* ===========================================================
@@ -620,6 +644,8 @@ function guardarTrazado(){
   if(!t.geomType){ alert('Este permiso no tiene geometría. Dibuja o importa primero.'); return; }
   const p=permisoDe(t.pna);
   if(p && p.requiere_concesion && !t.concesion){ if(!confirm('Este permiso (ANI) normalmente requiere Concesión y está vacía. ¿Guardar de todos modos?')) return; }
+  dedupeTrazados();               // si quedó un permiso con el mismo nombre, gana esta versión (no duplica)
+  editandoId = t._uid;
   renderLista(); dibujarTodo(); validar();
   document.getElementById('editHint').textContent='Guardado ✔';
 }
@@ -719,6 +745,7 @@ function ajustarVista(){ const pts=[]; trazados.forEach(t=>(t.coords||[]).forEac
    EXPORTAR KMZ
    =========================================================== */
 async function exportarKMZ(){
+  podarVacios(); dedupeTrazados();   // nunca exportar permisos repetidos o fantasma
   if(!trazados.length){ alert('No hay permisos para exportar.'); return; }
   const malos=trazados.filter(t=>faltantes(t).length);
   if(malos.length && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Exportar de todos modos?')) return;
