@@ -218,7 +218,7 @@
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead class="table-dark"><tr>
-            <th>#</th><th>Nombre</th><th>Geom.</th><th>Proyecto</th><th>PNA</th><th>Autoridad</th><th>Hist.</th><th>Estado actual</th><th>Válido</th><th>Acciones</th>
+            <th>#</th><th>Nombre</th><th>Geom.</th><th>Proyecto</th><th>PNA</th><th>Autoridad</th><th>Hist.</th><th>Estados Trámite</th><th>Válido</th><th>Acciones</th>
           </tr></thead>
           <tbody id="listaBody"><tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr></tbody>
         </table>
@@ -657,20 +657,36 @@ function renderLista(){
   guardarTrazadosLocal();   // autoguardado de la sesión de trabajo
   const b=document.getElementById('listaBody'); document.getElementById('cnt').textContent=trazados.length;
   if(!trazados.length){ b.innerHTML='<tr><td colspan="10" class="text-center mini py-3">Sin permisos todavía.</td></tr>'; return; }
-  b.innerHTML='';
-  trazados.forEach((t,i)=>{
+  let html='';
+  trazados.forEach((t)=>{
     const f=faltantes(t); const p=permisoDe(t.pna);
-    const estado = f.length ? `<span class="badge badge-bad">Falta: ${f.join(', ')}</span>` : `<span class="badge badge-ok">Completo</span>`;
-    b.innerHTML += `<tr>
-      <td>${i+1}</td><td>${esc(t.nombre)||'<i class="mini">—</i>'}</td><td>${tipoLegible(t.geomType)}</td>
-      <td>${esc(t.proyecto)||'—'}</td><td>${esc(t.pna)||'—'}</td><td>${esc(p?p.autoridad:'—')}</td>
-      <td>${(t.historial||[]).length}</td><td>${esc(estadoActual(t.historial))}</td><td>${estado}</td>
-      <td style="white-space:nowrap">
+    // Columnas que se COMPILAN (iguales para todo el permiso) -> se muestran una vez con rowspan.
+    // Columnas por fila (una por cada avance del historial): #, Estados Trámite, Válido, Acciones.
+    const validoBadge = f.length ? `<span class="badge badge-bad">Falta: ${esc(f.join(', '))}</span>` : `<span class="badge badge-ok">Completo</span>`;
+    const acciones = `<div style="white-space:nowrap">
         <button class="btn btn-sm epm-btn py-0" onclick="editar(${t._uid})" title="Editar">✏️</button>
         <button class="btn btn-sm epm-btn-orange py-0" onclick="duplicar(${t._uid})" title="Duplicar">⧉</button>
         <button class="btn btn-sm btn-outline-danger py-0" onclick="borrar(${t._uid})" title="Eliminar">🗑</button>
-      </td></tr>`;
+      </div>`;
+    const avances = (t.historial && t.historial.length) ? t.historial : [null];
+    const N = avances.length;
+    avances.forEach((h, idx)=>{
+      let cells = `<td>${idx+1}</td>`;                     // # (número de avance) — por fila
+      if(idx===0){                                          // bloque compilado (rowspan) solo en la 1ª fila
+        cells += `<td rowspan="${N}">${esc(t.nombre)||'<i class="mini">—</i>'}</td>`
+              +  `<td rowspan="${N}">${tipoLegible(t.geomType)}</td>`
+              +  `<td rowspan="${N}">${esc(t.proyecto)||'—'}</td>`
+              +  `<td rowspan="${N}">${esc(t.pna)||'—'}</td>`
+              +  `<td rowspan="${N}">${esc(p?p.autoridad:'—')}</td>`
+              +  `<td rowspan="${N}">${(t.historial||[]).length}</td>`;
+      }
+      const estadoTxt = h ? (esc(h.estado_tramite||'—') + (h.culminado?' <span class="badge badge-ok" title="culminó">✔</span>':''))
+                          : '<i class="mini">sin historial</i>';
+      cells += `<td>${estadoTxt}</td><td>${validoBadge}</td><td>${acciones}</td>`;
+      html += '<tr>'+cells+'</tr>';
+    });
   });
+  b.innerHTML = html;
 }
 function validar(){
   const box=document.getElementById('validBox');

@@ -36,13 +36,29 @@
   .tl-item{ position:relative; margin-bottom:10px;}
   .tl-item::before{ content:''; position:absolute; left:-21px; top:3px; width:11px; height:11px; border-radius:50%; background:var(--epm-verde); border:2px solid #fff;}
   .tl-estado{ font-weight:bold; color:#245c24; font-size:.85rem;}
+  /* Insignias de autoridad (fallback profesional si no hay logo oficial) */
+  .logo-wrap img{ max-height:26px; max-width:78px; object-fit:contain; }
+  .badge-aut{ display:inline-flex; align-items:center; gap:5px; padding:2px 7px; border-radius:5px; font-weight:700;
+              font-size:.66rem; letter-spacing:.3px; color:#fff; line-height:1.1; box-shadow:0 1px 2px rgba(0,0,0,.15); white-space:nowrap;}
+  .badge-aut small{ font-weight:600; opacity:.9; font-size:.9em; }
+  .barra{ background:#e9ecef; border-radius:4px; height:9px; overflow:hidden; }
+  .barra > span{ display:block; height:100%; border-radius:4px; }
+  .chart-card{ background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); padding:12px 14px; height:100%; }
+  .chart-title{ font-size:.72rem; text-transform:uppercase; color:#6c757d; font-weight:bold; margin-bottom:8px; }
+  .dist-row{ display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:.74rem; }
+  .dist-row .lbl{ width:150px; text-align:right; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dist-row .barra{ flex:1; }
+  .dist-row .num{ width:26px; font-weight:bold; color:#333; }
 </style>
 </head>
 <body>
 <div class="epm-header d-flex align-items-center">
   <span style="font-size:24px">🗺️</span>
   <span class="epm-title">PLATAFORMA CONTROL INTEGRAL PNAs</span>
-  <span class="ms-auto mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
+  <span class="ms-auto d-flex align-items-center gap-3">
+    <span class="mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
+    <span class="logo-wrap"><img src="assets/logos/epm.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="height:34px" alt="EPM"><span class="badge-aut" style="display:none;background:#009300;font-size:.9rem;padding:4px 10px">epm<small>®</small></span></span>
+  </span>
 </div>
 
 <div class="container-fluid p-3">
@@ -62,6 +78,28 @@
     <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo (proyecto)</div><div class="n sem-rojo" id="kpiRiesgo">0</div></div></div>
     <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#d56b00"><div class="t">Vencidos con autoridad</div><div class="n" style="color:#d56b00" id="kpiVencido">0</div></div></div>
     <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#0066CC"><div class="t">Activados / Listos</div><div class="n" style="color:#0066CC" id="kpiActivo">0</div></div></div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="row g-2 mb-3">
+    <div class="col-12 col-md-4">
+      <div class="chart-card text-center">
+        <div class="chart-title">Avance promedio del trámite</div>
+        <div id="donaAvance"></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="chart-card">
+        <div class="chart-title">Permisos por estado de trámite</div>
+        <div id="distEstado"></div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="chart-card">
+        <div class="chart-title">Permisos por autoridad</div>
+        <div id="distAutoridad"></div>
+      </div>
+    </div>
   </div>
 
   <div class="row g-3">
@@ -93,7 +131,7 @@
               <thead class="table-dark">
                 <tr>
                   <th>Frente</th><th>Proyecto</th><th>Cód. Banco</th><th>PNA</th><th>Autoridad</th><th>Municipio</th>
-                  <th>Estado actual</th><th>Últ. radicado</th><th>F. límite</th>
+                  <th>Estado actual</th><th>Avance</th><th>Últ. radicado</th><th>F. límite</th>
                   <th>Semáforo gestión</th><th>Semáforo riesgo</th><th></th>
                 </tr>
               </thead>
@@ -130,13 +168,15 @@
    ============================================================ */
 
 /* ---- Catálogo embebido (respaldo) — incluye valor/unidad del plazo ---- */
+const AV_SIMPLE = {"Radicado":10,"Negado":100,"Aprobado":100};
+const AV_COMPLETO = {"Radicado":10,"Observado":20,"Revisión_Ajustes":50,"Resolución_Aprobatoria":80,"Gestión_Pólizas":90,"Gestión_Acta_Inicio":100,"Gestión_Suspensión":100,"Gestión_Reinicio":100};
 const CAT_SEED = {
   permisos:[
-    {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#009300", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"]},
-    {pna:"PUZV", autoridad:"INVIAS", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#0066CC", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
-    {pna:"Cierre_Via", autoridad:"INVIAS", tiempo_gestion:{valor:3,unidad:"meses",texto:"3 meses"}, color:"#d56b00", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
-    {pna:"PUOI-IVCF", autoridad:"ANI", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#8e44ad", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]},
-    {pna:"PIV", autoridad:"Gobernación", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#e6a800", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"]}
+    {pna:"PMT_Diseño", autoridad:"Municipio", tiempo_gestion:{valor:15,unidad:"dias_habiles",texto:"15 días hábiles"}, color:"#009300", estado_activacion:"Aprobado", estados_cierre:["Aprobado","Negado"], avance_estados:AV_SIMPLE},
+    {pna:"PUZV", autoridad:"INVIAS", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#0066CC", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"Cierre_Via", autoridad:"INVIAS", tiempo_gestion:{valor:3,unidad:"meses",texto:"3 meses"}, color:"#d56b00", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"PUOI-IVCF", autoridad:"ANI", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#8e44ad", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO},
+    {pna:"PIV", autoridad:"Gobernación", tiempo_gestion:{valor:12,unidad:"meses",texto:"12 meses"}, color:"#e6a800", estado_activacion:"Gestión_Acta_Inicio", estados_cierre:["Resolución_Aprobatoria"], avance_estados:AV_COMPLETO}
   ]
 };
 let CAT = CAT_SEED;
@@ -153,6 +193,7 @@ function permisoDe(pna){
     estado_activacion: p.estado_activacion || seed.estado_activacion,
     estados_cierre: p.estados_cierre || seed.estados_cierre,
     tiempo_gestion: p.tiempo_gestion || seed.tiempo_gestion,
+    avance_estados: p.avance_estados || seed.avance_estados,
     color: p.color || seed.color
   });
 }
@@ -193,29 +234,34 @@ function calcular(p){
     }
   }
 
-  // ---- Semáforo de riesgo al proyecto (llegar a activación antes del límite) ----
-  const target = perm.estado_activacion;
+  // ---- % de avance del trámite (según el estado actual, del catálogo) ----
+  const avMap = perm.avance_estados || {};
+  const avance = (estadoActual && avMap[estadoActual]!=null) ? avMap[estadoActual] : 0;
+  // Nº de veces que se ha radicado (trazabilidad de reprocesos)
+  const radicaciones = hist.filter(h=>(h.estado_tramite||'')==='Radicado').length;
+
+  // ---- Semáforo de RIESGO al proyecto = proximidad a la fecha límite ----
+  // (Ya NO proyecta el plazo completo desde la radicación: eso marcaba en riesgo
+  //  trámites que avanzan bien. El avance lo mide el % por estado; el riesgo mide
+  //  si se acerca/pasa la fecha en que el proyecto necesita el permiso.)
   const limite = toDate(p.fecha_limite_requerida);
   const holg = parseInt(p.holgura_dias)||0;
-  let semR = {clase:'sem-gris', txt:'Sin fecha límite'};
-  if(alcanzo(target)){
-    semR = {clase:'sem-verde', txt:'Activado / Listo'};
-  } else if(limite && tg){
-    // Estimación de cuándo estará LISTO para activarse:
-    //  - Si ya está otorgado (Resolución_Aprobatoria): la activación es inminente -> hoy.
-    //  - Si aún en trámite: fecha de radicación + plazo normativo; nunca en el pasado.
-    let estimadaLista;
-    if(cerrado){ estimadaLista = hoy(); }
-    else { estimadaLista = calcularVencimiento(fRad || hoy(), tg); if(estimadaLista < hoy()) estimadaLista = hoy(); }
-    const limiteAjustado = addDays(limite, -holg);
-    const margen = diasEntre(estimadaLista, limiteAjustado);
-    if(margen < 0)       semR = {clase:'sem-rojo',     txt:'En riesgo ('+Math.abs(margen)+'d tarde)'};
-    else if(margen<=30)  semR = {clase:'sem-amarillo', txt:'Ajustado ('+margen+'d)'};
-    else                 semR = {clase:'sem-verde',    txt:'A tiempo ('+margen+'d)'};
+  let semR;
+  if(avance>=100){
+    semR = {clase:'sem-verde', txt:'Listo / Activado'};
+  } else if(!limite){
+    semR = {clase:'sem-gris', txt:'Sin fecha límite'};
+  } else {
+    const dr = diasEntre(hoy(), addDays(limite,-holg));   // días hasta el límite (menos holgura)
+    if(dr < 0)      semR = {clase:'sem-rojo',     txt:'Vencido límite ('+Math.abs(dr)+'d)'};
+    else if(dr<=30) semR = {clase:'sem-amarillo', txt:'Próximo al límite ('+dr+'d)'};
+    else            semR = {clase:'sem-verde',    txt:'En plazo ('+dr+'d)'};
   }
 
   p._estadoActual = estadoActual || '—';
   p._ultRadicado  = ultRad ? (ultRad.radicado_respuesta || ultRad.radicado) : '';
+  p._avance = avance;
+  p._radicaciones = radicaciones;
   p._semG = semG; p._semR = semR;
   p._autoridad = perm.autoridad || p.autoridad || '';
   p._color = perm.color || '#009300';
@@ -325,12 +371,60 @@ function leyenda(){
   (CAT.permisos||CAT_SEED.permisos).forEach(p=>{ box.innerHTML+=`<span><i style="background:${p.color}"></i>${esc(p.pna)}</span>`; });
 }
 
+/* ================= GRÁFICOS (SVG puro, sin dependencias) ================= */
+function colorAvance(pct){ return pct>=80?'#009300':(pct>=40?'#e6a800':'#d56b00'); }
+function donutSVG(pct, size){
+  pct=Math.max(0,Math.min(100,Math.round(+pct||0))); size=size||130;
+  const sw=Math.round(size*0.12), r=size/2-sw/2-2, c=2*Math.PI*r, off=c*(1-pct/100), col=colorAvance(pct);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#e9ecef" stroke-width="${sw}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}"
+      stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+      transform="rotate(-90 ${size/2} ${size/2})"/>
+    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${(size*0.22).toFixed(0)}" font-weight="bold" fill="#343a40">${pct}%</text>
+  </svg>`;
+}
+function barra(pct,col){ return `<div class="barra"><span style="width:${Math.max(0,Math.min(100,pct))}%;background:${col||'#009300'}"></span></div>`; }
+function renderDist(elId, pairs, colorFn){
+  const max=Math.max(1, ...pairs.map(p=>p[1]));
+  document.getElementById(elId).innerHTML = pairs.length ? pairs.map(p=>{
+    const w=Math.round(p[1]/max*100), col=colorFn?colorFn(p[0]):'#009300';
+    return `<div class="dist-row"><span class="lbl" title="${esc(p[0])}">${esc(p[0])}</span><span class="barra"><span style="width:${w}%;background:${col}"></span></span><span class="num">${p[1]}</span></div>`;
+  }).join('') : '<i class="mini">Sin datos.</i>';
+}
+function conteo(lista, campo){
+  const m={}; lista.forEach(p=>{ const k=p[campo]||'—'; m[k]=(m[k]||0)+1; });
+  return Object.keys(m).map(k=>[k,m[k]]).sort((a,b)=>b[1]-a[1]);
+}
+
+/* ================= INSIGNIAS / LOGOS DE AUTORIDAD ================= */
+function autInfo(aut){
+  const a=(aut||'').toLowerCase();
+  if(a.includes('invias'))  return {key:'invias', label:'INVIAS', color:'#F2A900', text:'#1a1a1a'};
+  if(a.includes('ani'))     return {key:'ani', label:'ANI', color:'#E8630A', text:'#fff'};
+  if(a.includes('gober'))   return {key:'gobernacion', label:'GOB. ANTIOQUIA', color:'#0b7a3b', text:'#fff'};
+  if(a.includes('municip')) return {key:'municipio', label:'SEC. MOVILIDAD', color:'#1f4e79', text:'#fff'};
+  return {key:'otro', label:(aut||'—').toUpperCase(), color:'#6c757d', text:'#fff'};
+}
+/* Muestra el logo oficial si existe en assets/logos/<key>.png; si no, una insignia profesional. */
+function badgeAutoridad(aut, municipio){
+  const i=autInfo(aut);
+  const sub=(i.key==='municipio' && municipio) ? ' <small>'+esc(municipio)+'</small>' : '';
+  return `<span class="logo-wrap" title="${esc(aut||'')}">`
+    + `<img src="assets/logos/${i.key}.png" alt="${esc(i.label)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">`
+    + `<span class="badge-aut" style="display:none;background:${i.color};color:${i.text}">${esc(i.label)}${sub}</span>`
+    + `</span>`;
+}
+
 /* ================= TABLA + FILTROS ================= */
 function fila(p){
+  const col=colorAvance(p._avance);
   return `<tr data-nombre="${esc(p.nombre)}">
     <td>${esc(p.frente||'—')}</td><td>${esc(p.proyecto||'—')}</td><td>${esc(p.codigo_banco||'—')}</td>
-    <td>${esc(p.pna||'—')}</td><td>${esc(p._autoridad||'—')}</td><td>${esc(p.municipio||'—')}</td>
-    <td>${esc(p._estadoActual)}</td><td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
+    <td>${esc(p.pna||'—')}</td><td>${badgeAutoridad(p._autoridad,p.municipio)}</td><td>${esc(p.municipio||'—')}</td>
+    <td>${esc(p._estadoActual)}</td>
+    <td style="min-width:92px" data-order="${p._avance}">${barra(p._avance,col)}<span class="mini">${p._avance}%</span></td>
+    <td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
     <td class="sem ${p._semG.clase}">${p._semG.txt}</td>
     <td class="sem ${p._semR.clase}">${p._semR.txt}</td>
     <td><button class="btn btn-sm epm-btn py-0" onclick="verHist('${esc(p.nombre).replace(/'/g,"\\'")}')">🗓️</button></td>
@@ -366,8 +460,8 @@ function refrescarTodo(){
   document.getElementById('tbody').innerHTML = lista.map(fila).join('') || '';
   tabla=$('#tabla').DataTable({
     language:{ url:'//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' },
-    pageLength:10, lengthMenu:[10,25,50,100], order:[[10,'asc']],
-    columnDefs:[{targets:11, orderable:false}],
+    pageLength:10, lengthMenu:[10,25,50,100], order:[[11,'asc']],
+    columnDefs:[{targets:12, orderable:false}],
     dom:"<'row'<'col-sm-6'l><'col-sm-6 text-end'B>><'row'<'col-12'tr>><'row'<'col-sm-5'i><'col-sm-7'p>>",
     buttons:[{extend:'excelHtml5', text:'📥 Excel', className:'btn btn-sm btn-success'}]
   });
@@ -376,7 +470,12 @@ function refrescarTodo(){
   document.getElementById('kpiTotal').textContent   = lista.length;
   document.getElementById('kpiRiesgo').textContent  = lista.filter(p=>p._semR.clase==='sem-rojo').length;
   document.getElementById('kpiVencido').textContent = lista.filter(p=>p._semG.clase==='sem-rojo').length;
-  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._semR.txt.indexOf('Activado')>=0).length;
+  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._avance>=100).length;
+  // Gráficos
+  const prom = lista.length ? Math.round(lista.reduce((s,p)=>s+(p._avance||0),0)/lista.length) : 0;
+  document.getElementById('donaAvance').innerHTML = donutSVG(prom, 130);
+  renderDist('distEstado', conteo(lista,'_estadoActual'));
+  renderDist('distAutoridad', conteo(lista,'_autoridad'), a=>autInfo(a).color);
   refrescarFiltros();
 }
 
@@ -384,13 +483,20 @@ function refrescarTodo(){
 function verHist(nombre){
   const p=PERMISOS.find(x=>x.nombre===nombre); if(!p) return;
   document.getElementById('mhTitulo').textContent='Historial — '+p.nombre+' ('+(p.pna||'')+')';
-  let head=`<div class="mb-2 mini">
-    <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Frente:</b> ${esc(p.frente||'—')} &nbsp;|&nbsp; <b>Autoridad:</b> ${esc(p._autoridad||'—')} &nbsp;|&nbsp;
-    <b>Municipio:</b> ${esc(p.municipio||'—')} &nbsp;|&nbsp; <b>F. límite:</b> ${fmtDMY(p.fecha_limite_requerida)}
-    ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
-  </div>
-  <div class="mb-3"><span class="sem ${p._semG.clase}">Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
-  <span class="sem ${p._semR.clase}">Riesgo: ${p._semR.txt}</span></div>`;
+  let head=`<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <div class="text-center" style="min-width:120px">${donutSVG(p._avance,110)}<div class="mini">Avance</div></div>
+    <div class="flex-grow-1">
+      <div class="mb-2">${badgeAutoridad(p._autoridad,p.municipio)}</div>
+      <div class="mini">
+        <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Frente:</b> ${esc(p.frente||'—')} &nbsp;|&nbsp;
+        <b>Municipio:</b> ${esc(p.municipio||'—')} &nbsp;|&nbsp; <b>F. límite:</b> ${fmtDMY(p.fecha_limite_requerida)}
+        ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
+        &nbsp;|&nbsp; <b>Estado actual:</b> ${esc(p._estadoActual)} &nbsp;|&nbsp; <b>Radicaciones:</b> ${p._radicaciones}
+      </div>
+      <div class="mt-2"><span class="sem ${p._semG.clase}">Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
+      <span class="sem ${p._semR.clase}">Riesgo: ${p._semR.txt}</span></div>
+    </div>
+  </div>`;
   const hist=p.historial||[];
   let tl = hist.length ? '<div class="tl">'+hist.map(h=>`
     <div class="tl-item">
