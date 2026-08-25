@@ -72,6 +72,24 @@
   .pp-bar > span{ display:block; height:100%; border-radius:4px; }
   .pp-sem{ margin-top:7px; padding-top:6px; border-top:1px solid #e9ecef; font-size:.76rem; white-space:normal; }
   .pp-sem.sem-verde{ color:#009300;} .pp-sem.sem-amarillo{ color:#c78a00;} .pp-sem.sem-rojo{ color:#dc3545;} .pp-sem.sem-gris{ color:#6c757d;}
+  /* KPI "En riesgo" dividido en 2 (Permisos / Proyectos) */
+  .kpi-split{ display:flex; align-items:stretch; margin-top:2px; }
+  .kpi-split > .c{ flex:1; text-align:center; }
+  .kpi-split .sep{ flex:0 0 1px; width:1px; background:#e9ecef; margin:2px 4px; }
+  .kpi-split .n{ font-size:1.35rem; line-height:1.1; }
+  .kpi-split .sub{ font-size:.58rem; color:#6c757d; text-transform:uppercase; font-weight:bold; letter-spacing:.2px; }
+  /* Distribución con etiqueta COMPLETA y espacio vertical repartido (Negocio / Autoridad) */
+  .distf{ display:flex; flex-direction:column; justify-content:space-around; min-height:150px; height:100%; }
+  .distf-row{ padding:3px 0; }
+  .distf-lbl{ font-size:.72rem; color:#343a40; font-weight:600; margin-bottom:3px; display:flex; justify-content:space-between; gap:8px; line-height:1.2; }
+  .distf-lbl .num{ font-weight:700; color:#333; flex:0 0 auto; }
+  /* "Avance del trámite": agrupación Negocio › Proyecto › Permisos */
+  .av-neg{ font-size:.72rem; font-weight:700; color:#0b6b34; background:#eef6ef; border-radius:5px; padding:3px 8px; margin:7px 0 3px; }
+  .av-proy{ font-size:.7rem; font-weight:700; color:#495057; margin:4px 0 2px 6px; }
+  .av-row{ display:flex; align-items:center; gap:6px; font-size:.7rem; margin:0 0 3px 12px; }
+  .av-row .albl{ flex:1; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .av-row .abar{ flex:0 0 84px; }
+  .av-row .anum{ flex:0 0 34px; text-align:right; font-weight:700; color:#333; }
 </style>
 </head>
 <body>
@@ -98,17 +116,23 @@
   <!-- KPIs -->
   <div class="row g-2 mb-3">
     <div class="col-6 col-md-3"><div class="kpi"><div class="t">Permisos</div><div class="n" id="kpiTotal">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo (proyecto)</div><div class="n sem-rojo" id="kpiRiesgo">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#d56b00"><div class="t">Vencidos con autoridad</div><div class="n" style="color:#d56b00" id="kpiVencido">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#008c6b"><div class="t">Activados / Listos</div><div class="n" style="color:#008c6b" id="kpiActivo">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#008c6b"><div class="t">Activados / Obtenidos</div><div class="n" style="color:#008c6b" id="kpiActivo">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#0d6efd"><div class="t">En gestión</div><div class="n" style="color:#0d6efd" id="kpiGestion">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo</div>
+      <div class="kpi-split">
+        <div class="c"><div class="n sem-rojo" id="kpiRiesgoP">0</div><div class="sub">Permisos</div></div>
+        <div class="sep"></div>
+        <div class="c"><div class="n sem-rojo" id="kpiRiesgoPr">0</div><div class="sub">Proyectos</div></div>
+      </div>
+    </div></div>
   </div>
 
   <!-- GRÁFICOS -->
   <div class="row g-2 mb-3">
     <div class="col-12 col-md-6 col-xl-3">
-      <div class="chart-card text-center h-100">
-        <div class="chart-title">Avance promedio del trámite</div>
-        <div id="donaAvance"></div>
+      <div class="chart-card h-100">
+        <div class="chart-title">Avance del trámite</div>
+        <div id="avanceTramite" style="max-height:210px; overflow:auto"></div>
       </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
@@ -134,7 +158,7 @@
   <!-- FILTROS (izquierda) + MAPA con sus logos (derecha) -->
   <div class="row g-3 mb-3">
     <div class="col-12 col-lg-4">
-      <div class="card h-100" style="border-color:var(--epm-verde)">
+      <div class="card" style="border-color:var(--epm-verde)">
         <div class="epm-card-header">⚙️ Filtros</div>
         <div class="card-body py-2">
           <div class="row g-2">
@@ -151,26 +175,22 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-12 col-lg-8">
-      <div id="map"></div>
-      <div class="leyenda mt-2" id="leyenda"></div>
-      <!-- RECORRIDO TEMPORAL: mueve la "fecha de análisis" y recalcula semáforos e itinerancia como si HOY fuera esa fecha -->
-      <div class="card mt-2" style="border-color:var(--epm-lima)">
+      <!-- RECORRIDO TEMPORAL (en la zona de Filtros, debajo de Limpiar): mueve la "fecha de análisis" y recalcula semáforos e itinerancia como si HOY fuera esa fecha -->
+      <div class="card mt-3" style="border-color:var(--epm-lima)">
         <div class="epm-card-header py-1">🕑 Recorrido temporal
-          <span class="mini fw-normal">— analiza la gestión en una fecha dada (semáforos e itinerancia se recalculan)</span>
+          <span class="mini fw-normal" style="color:#fff">— analiza la gestión en una fecha dada (semáforos e itinerancia se recalculan)</span>
         </div>
         <div class="card-body py-2">
           <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-3"><label class="mini fw-bold">Inicio recorrido</label><input type="date" id="rtIni" class="form-control form-control-sm"></div>
-            <div class="col-6 col-md-3"><label class="mini fw-bold">Fin recorrido</label><input type="date" id="rtFin" class="form-control form-control-sm"></div>
-            <div class="col-6 col-md-3"><label class="mini fw-bold">Avanzar cada</label>
+            <div class="col-6"><label class="mini fw-bold">Inicio recorrido</label><input type="date" id="rtIni" class="form-control form-control-sm"></div>
+            <div class="col-6"><label class="mini fw-bold">Fin recorrido</label><input type="date" id="rtFin" class="form-control form-control-sm"></div>
+            <div class="col-6"><label class="mini fw-bold">Avanzar cada</label>
               <div class="input-group input-group-sm">
                 <input type="number" id="rtPaso" class="form-control form-control-sm" value="7" min="1">
                 <select id="rtUnidad" class="form-select form-select-sm"><option value="dias">días</option><option value="semanas" selected>semanas</option><option value="meses">meses</option></select>
               </div>
             </div>
-            <div class="col-6 col-md-3"><label class="mini fw-bold">Velocidad</label>
+            <div class="col-6"><label class="mini fw-bold">Velocidad</label>
               <select id="rtVel" class="form-select form-select-sm"><option value="1500">Lenta</option><option value="800" selected>Media</option><option value="350">Rápida</option></select>
             </div>
             <div class="col-12">
@@ -185,6 +205,10 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class="col-12 col-lg-8">
+      <div id="map"></div>
+      <div class="leyenda mt-2" id="leyenda"></div>
     </div>
   </div>
 
@@ -605,6 +629,38 @@ function renderDist(elId, pairs, colorFn){
     return `<div class="dist-row"><span class="lbl" title="${esc(p[0])}">${esc(p[0])}</span><span class="barra"><span style="width:${w}%;background:${col}"></span></span><span class="num">${p[1]}</span></div>`;
   }).join('') : '<i class="mini">Sin datos.</i>';
 }
+/* Distribución con etiqueta COMPLETA (sin truncar) y espacio vertical repartido entre categorías. */
+function renderDistFull(elId, pairs, colorFn){
+  const box=document.getElementById(elId); if(!box) return;
+  const max=Math.max(1, ...pairs.map(p=>p[1]));
+  box.innerHTML = pairs.length ? '<div class="distf">'+pairs.map(p=>{
+    const w=Math.round(p[1]/max*100), col=colorFn?colorFn(p[0]):'#009300';
+    return `<div class="distf-row"><div class="distf-lbl"><span>${esc(p[0])}</span><span class="num">${p[1]}</span></div><div class="barra"><span style="width:${w}%;background:${col}"></span></div></div>`;
+  }).join('')+'</div>' : '<i class="mini">Sin datos.</i>';
+}
+/* Conteo por categorías FIJAS: siempre lista todas (aunque tengan 0), para repartir el espacio por igual. */
+function conteoFijo(lista, campo, cats){ return cats.map(c=>[c, lista.filter(p=>(p[campo]||'')===c).length]); }
+function NEGOCIOS_CAT(){ return (CAT.listas_comunes && CAT.listas_comunes.negocios) || ['Ger_Acueducto-Alcantarillado','Ger_Gas','Ger_Transmisión-Distribución','Ger_Generación']; }
+function AUTORIDADES_CAT(){ const seen=[]; (CAT.permisos||CAT_SEED.permisos).forEach(p=>{ if(p.autoridad && !seen.includes(p.autoridad)) seen.push(p.autoridad); }); return seen; }
+/* "Avance del trámite": barras horizontales agrupadas Negocio › Proyecto › Permisos (cada permiso su avance). */
+function renderAvanceTramite(lista){
+  const box=document.getElementById('avanceTramite'); if(!box) return;
+  if(!lista.length){ box.innerHTML='<i class="mini">Sin datos.</i>'; return; }
+  const gN={}; lista.forEach(p=>{ const n=p.negocio||'—'; (gN[n]=gN[n]||[]).push(p); });
+  let html='';
+  Object.keys(gN).sort().forEach(neg=>{
+    html += `<div class="av-neg">${esc(neg)}</div>`;
+    const gP={}; gN[neg].forEach(p=>{ const pr=p.proyecto||'—'; (gP[pr]=gP[pr]||[]).push(p); });
+    Object.keys(gP).sort().forEach(proy=>{
+      html += `<div class="av-proy">${esc(proy)}</div>`;
+      gP[proy].forEach(p=>{
+        const col=colorAvance(p._avance);
+        html += `<div class="av-row"><span class="albl" title="${esc(p.frente||'')} · ${esc(p.pna||'')}">${esc(p.frente||p.nombre)} <span class="mini">${esc(p.pna||'')}</span></span><span class="abar barra"><span style="width:${p._avance}%;background:${col}"></span></span><span class="anum">${p._avance}%</span></div>`;
+      });
+    });
+  });
+  box.innerHTML=html;
+}
 function conteo(lista, campo){
   const m={}; lista.forEach(p=>{ const k=p[campo]||'—'; m[k]=(m[k]||0)+1; });
   return Object.keys(m).map(k=>[k,m[k]]).sort((a,b)=>b[1]-a[1]);
@@ -643,7 +699,7 @@ function renderPorProyecto(lista){
   if(!lista.length){ box.innerHTML='<i class="mini">Sin datos.</i>'; return; }
   const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
   let html=`<div class="mini text-muted mb-2" style="line-height:1.35">
-    <b>Inicio</b> = ¿se radicó el trámite a tiempo? &nbsp;·&nbsp; <b>Obtención</b> = ¿se obtendrá antes de la fecha límite del proyecto?<br>
+    <b>Inicio</b> = ¿radicado a tiempo? &nbsp;·&nbsp; <b>Obtención</b> = ¿se obtendrá a tiempo?<br>
     ${dot('sem-verde')}ok &nbsp; ${dot('sem-amarillo')}por vencer &nbsp; ${dot('sem-rojo')}en riesgo &nbsp; ${dot('sem-gris')}sin dato
   </div>`;
   Object.keys(grupos).sort().forEach(proy=>{
@@ -751,17 +807,19 @@ function refrescarTodo(){
     buttons:[{extend:'excelHtml5', text:'📥 Excel', className:'btn btn-sm btn-success'}]
   });
   dibujarMapa(lista, FECHA_ANALISIS===null);   // reencuadra solo fuera del recorrido temporal
-  // KPIs
+  // KPIs — semáforo "crítico" = inicio si no ha radicado; obtención si ya radicó
+  const critico = p => (p._radicaciones>0 ? estadoObtencion(p) : estadoInicio(p));
   document.getElementById('kpiTotal').textContent   = lista.length;
-  document.getElementById('kpiRiesgo').textContent  = lista.filter(p=>p._semR.clase==='sem-rojo').length;
-  document.getElementById('kpiVencido').textContent = lista.filter(p=>p._semG.clase==='sem-rojo').length;
-  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._listo).length;
+  document.getElementById('kpiActivo').textContent  = lista.filter(p=>p._listo).length;                       // Activados / Obtenidos
+  document.getElementById('kpiGestion').textContent = lista.filter(p=> p._avance>0 && p._avance<100).length;  // En gestión (radicó pero <100%)
+  const enRiesgo = lista.filter(p=> critico(p).clase==='sem-rojo');
+  document.getElementById('kpiRiesgoP').textContent  = enRiesgo.length;                                       // Permisos en riesgo
+  document.getElementById('kpiRiesgoPr').textContent = new Set(enRiesgo.map(p=>p.proyecto||'—')).size;        // Proyectos en riesgo
   // Gráficos
-  const prom = lista.length ? Math.round(lista.reduce((s,p)=>s+(p._avance||0),0)/lista.length) : 0;
-  document.getElementById('donaAvance').innerHTML = donutSVG(prom, 130);
+  renderAvanceTramite(lista);
   renderPorProyecto(lista);
-  renderDist('distNegocio', conteo(lista,'negocio'), negocioColor);
-  renderDist('distAutoridad', conteo(lista,'_autoridad'), a=>autInfo(a).color);
+  renderDistFull('distNegocio', conteoFijo(lista,'negocio', NEGOCIOS_CAT()), negocioColor);
+  renderDistFull('distAutoridad', conteoFijo(lista,'_autoridad', AUTORIDADES_CAT()), a=>autInfo(a).color);
   refrescarFiltros();
 }
 
