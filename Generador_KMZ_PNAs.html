@@ -663,6 +663,8 @@ function guardarTrazado(){
     else if(dibujoModo==='punto'){ t.geomType='Point'; t.coords=[dibujoTemp[0]]; cancelarDibujo(); }
   }
   if(!t.geomType){ alert('Este permiso no tiene geometría. Dibuja o importa primero.'); return; }
+  // Fecha límite requerida = OBLIGATORIA: sin ella el dashboard no puede calcular los semáforos de inicio/obtención.
+  if(!t.fecha_limite_requerida){ alert('La "Fecha límite requerida" es obligatoria: define los semáforos de inicio y obtención en el dashboard. Ingrésala antes de guardar.'); const el=document.getElementById('fLimite'); if(el) el.focus(); return; }
   const p=permisoDe(t.pna);
   if(p && p.requiere_concesion && !t.concesion){ if(!confirm('Este permiso (ANI) normalmente requiere Concesión y está vacía. ¿Guardar de todos modos?')) return; }
   dedupeTrazados();               // si quedó un permiso con el mismo nombre, gana esta versión (no duplica)

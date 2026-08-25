@@ -29,7 +29,7 @@
   .kpi .t{ font-size:.72rem; color:#6c757d; text-transform:uppercase; font-weight:bold;}
   table td, table th{ font-size:.8rem; vertical-align:middle;}
   .sem{ font-weight:bold; white-space:nowrap; }
-  .sem-verde{ color:#009300;} .sem-amarillo{ color:#c78a00;} .sem-rojo{ color:#dc3545;} .sem-gris{ color:#6c757d;}
+  .sem-verde{ color:#009300;} .sem-amarillo{ color:#c78a00;} .sem-rojo{ color:#dc3545;} .sem-gris{ color:#6c757d;} .sem-alerta{ color:#d56b00;}
   .leyenda span{ display:inline-block; margin-right:10px; font-size:.72rem;}
   .leyenda i{ display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:3px; vertical-align:middle;}
   .select2-container--bootstrap-5 .select2-selection{ font-size:.8rem; min-height:31px;}
@@ -71,7 +71,7 @@
   .pp-bar{ display:inline-block; width:64px; height:8px; background:#e9ecef; border-radius:4px; overflow:hidden; vertical-align:middle; }
   .pp-bar > span{ display:block; height:100%; border-radius:4px; }
   .pp-sem{ margin-top:7px; padding-top:6px; border-top:1px solid #e9ecef; font-size:.76rem; white-space:normal; }
-  .pp-sem.sem-verde{ color:#009300;} .pp-sem.sem-amarillo{ color:#c78a00;} .pp-sem.sem-rojo{ color:#dc3545;} .pp-sem.sem-gris{ color:#6c757d;}
+  .pp-sem.sem-verde{ color:#009300;} .pp-sem.sem-amarillo{ color:#c78a00;} .pp-sem.sem-rojo{ color:#dc3545;} .pp-sem.sem-gris{ color:#6c757d;} .pp-sem.sem-alerta{ color:#d56b00;}
   /* KPI "En riesgo" dividido en 2 (Permisos / Proyectos) */
   .kpi-split{ display:flex; align-items:stretch; margin-top:2px; }
   .kpi-split > .c{ flex:1; text-align:center; }
@@ -603,7 +603,7 @@ function leyenda(){
 }
 /* Círculo de color para acompañar el texto del semáforo */
 function dot(clase){
-  const m={'sem-verde':'#009300','sem-amarillo':'#d5a000','sem-rojo':'#dc3545','sem-gris':'#adb5bd'};
+  const m={'sem-verde':'#009300','sem-amarillo':'#d5a000','sem-rojo':'#dc3545','sem-gris':'#adb5bd','sem-alerta':'#d56b00'};
   return `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m[clase]||'#adb5bd'};margin-right:5px;vertical-align:middle"></span>`;
 }
 
@@ -681,14 +681,17 @@ function nivelToClase(n){ return n==='verde'?'sem-verde':(n==='amarillo'?'sem-am
 function estadoInicio(p){
   if(p._radicaciones>0) return {clase:'sem-verde', txt:'Iniciado'};
   if(p._itinerancia && p._itinerancia.activa) return {clase:nivelToClase(p._itinerancia.nivel), txt:'Sin iniciar'};
-  return {clase:'sem-gris', txt:'Sin iniciar'};
+  // Sin radicar y sin poder calcular urgencia = falta la fecha límite requerida (dato obligatorio).
+  return {clase:'sem-alerta', txt:'⚠ Falta fecha límite'};
 }
 /* Semáforo de OBTENCIÓN = ¿se obtendrá el permiso antes de la fecha límite del proyecto?
    - Listo/Activado → verde "Obtenido".
    - En trámite     → días hábiles hasta la fecha límite (semáforo de riesgo).
+   - Sin fecha límite → alerta de dato faltante (no un semáforo).
 */
 function estadoObtencion(p){
   if(p._listo) return {clase:'sem-verde', txt:'Obtenido'};
+  if(p._semR.clase==='sem-gris') return {clase:'sem-alerta', txt:'⚠ Falta fecha límite'};
   return {clase:p._semR.clase, txt:p._riesgoCat||'—'};
 }
 function chip(s){ return `<span class="sem ${s.clase}" style="font-size:.72rem;white-space:nowrap">${dot(s.clase)}${esc(s.txt)}</span>`; }
@@ -700,7 +703,7 @@ function renderPorProyecto(lista){
   const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
   let html=`<div class="mini text-muted mb-2" style="line-height:1.35">
     <b>Inicio</b> = ¿radicado a tiempo? &nbsp;·&nbsp; <b>Obtención</b> = ¿se obtendrá a tiempo?<br>
-    ${dot('sem-verde')}ok &nbsp; ${dot('sem-amarillo')}por vencer &nbsp; ${dot('sem-rojo')}en riesgo &nbsp; ${dot('sem-gris')}sin dato
+    ${dot('sem-verde')}ok &nbsp; ${dot('sem-amarillo')}por vencer &nbsp; ${dot('sem-rojo')}en riesgo &nbsp; <span style="color:#d56b00;font-weight:600">⚠ falta fecha límite</span>
   </div>`;
   Object.keys(grupos).sort().forEach(proy=>{
     html += `<div class="mini fw-bold text-success mt-2 pb-1" style="border-bottom:1px solid #e9ecef">${esc(proy)}</div>`;
