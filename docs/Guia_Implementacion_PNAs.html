@@ -1,0 +1,567 @@
+<title>Guía de Implementación PNAs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#f2f6f2; --surface:#ffffff; --surface-2:#eef3ee; --surface-3:#e6efe7;
+    --ink:#16231c; --ink-soft:#48584f; --ink-faint:#71827a; --line:#d6e1d8; --line-strong:#b9cabd;
+    --accent:#00893f; --accent-deep:#0b6b34; --lima:#6f9e00;
+    --ok:#009300; --warn:#c78a00; --risk:#dc3545; --alert:#d56b00; --info:#0d6efd;
+    --shadow:0 1px 3px rgba(20,40,25,.08),0 8px 30px rgba(20,40,25,.05);
+    --radius:12px;
+  }
+  :root:not([data-theme="light"]){ }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1712; --surface:#152019; --surface-2:#1a271f; --surface-3:#1f3026;
+      --ink:#e7efe9; --ink-soft:#a9b9af; --ink-faint:#7f9186; --line:#28382e; --line-strong:#384c3f;
+      --accent:#43c266; --accent-deep:#7ed897; --lima:#a7d21e;
+      --ok:#3ac06a; --warn:#e6b422; --risk:#ff5c68; --alert:#ff8f3f; --info:#5aa0ff;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.34);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1712; --surface:#152019; --surface-2:#1a271f; --surface-3:#1f3026;
+    --ink:#e7efe9; --ink-soft:#a9b9af; --ink-faint:#7f9186; --line:#28382e; --line-strong:#384c3f;
+    --accent:#43c266; --accent-deep:#7ed897; --lima:#a7d21e;
+    --ok:#3ac06a; --warn:#e6b422; --risk:#ff5c68; --alert:#ff8f3f; --info:#5aa0ff;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.34);
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.62; letter-spacing:.005em;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:0 22px 100px; }
+  .measure{ max-width:720px; }
+  .mono{ font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .eyebrow{ font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600; letter-spacing:.16em;
+            text-transform:uppercase; color:var(--accent-deep); }
+  h1,h2,h3{ text-wrap:balance; line-height:1.18; }
+
+  /* ---- HERO ---- */
+  header.hero{ padding:64px 0 30px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  .kicker{ display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+  .kicker .dotmark{ width:13px; height:13px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent); }
+  .kicker span{ font-family:"IBM Plex Mono",monospace; font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); }
+  header.hero h1{ font-size:clamp(2rem,5vw,3.1rem); font-weight:700; margin:.1em 0 .35em; letter-spacing:-.015em; }
+  header.hero p.lead{ font-size:1.14rem; color:var(--ink-soft); max-width:640px; margin:0; }
+  .meta{ display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:26px; }
+  .tag{ font-family:"IBM Plex Mono",monospace; font-size:.72rem; padding:5px 11px; border:1px solid var(--line-strong);
+        border-radius:999px; color:var(--ink-soft); background:var(--surface); }
+  .tag b{ color:var(--accent-deep); font-weight:600; }
+
+  /* ---- TOC ---- */
+  nav.toc{ margin:34px 0 10px; padding:20px 22px; background:var(--surface); border:1px solid var(--line);
+           border-radius:var(--radius); box-shadow:var(--shadow); }
+  nav.toc h2{ font-size:.76rem; font-family:"IBM Plex Mono",monospace; letter-spacing:.14em; text-transform:uppercase;
+              color:var(--ink-faint); margin:0 0 12px; font-weight:600; }
+  nav.toc ol{ margin:0; padding:0; list-style:none; counter-reset:toc; column-gap:34px; }
+  @media(min-width:640px){ nav.toc ol{ columns:2; } }
+  nav.toc li{ counter-increment:toc; break-inside:avoid; margin:0 0 7px; padding-left:34px; position:relative; }
+  nav.toc li::before{ content:counter(toc,decimal-leading-zero); position:absolute; left:0; top:1px;
+                      font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--accent); font-weight:600; }
+  nav.toc a{ color:var(--ink); text-decoration:none; border-bottom:1px solid transparent; }
+  nav.toc a:hover{ border-bottom-color:var(--accent); color:var(--accent-deep); }
+
+  /* ---- SECTIONS ---- */
+  section{ padding-top:52px; scroll-margin-top:20px; }
+  .sec-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:6px; }
+  .sec-num{ font-family:"IBM Plex Mono",monospace; font-size:.95rem; font-weight:600; color:var(--accent);
+            border:1px solid var(--line-strong); border-radius:8px; padding:3px 9px; flex:none; }
+  h2.sec-title{ font-size:1.62rem; font-weight:700; margin:0; letter-spacing:-.01em; }
+  section > p, section > .measure > p, .measure > p{ color:var(--ink); }
+  p{ margin:.9em 0; }
+  h3{ font-size:1.12rem; font-weight:600; margin:2em 0 .5em; color:var(--ink); }
+  strong{ font-weight:600; }
+  a.ref{ color:var(--accent-deep); }
+  code{ font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--surface-2);
+        border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--accent-deep); white-space:nowrap; }
+
+  /* ---- CARDS / CALLOUTS ---- */
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:22px 24px;
+         box-shadow:var(--shadow); margin:22px 0; }
+  .why{ border-left:3px solid var(--lima); background:var(--surface-2); border-radius:0 10px 10px 0;
+        padding:14px 18px; margin:18px 0; font-size:.96rem; }
+  .why .lbl{ font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+             color:var(--lima); font-weight:600; display:block; margin-bottom:3px; }
+  .note{ border-left:3px solid var(--info); background:color-mix(in srgb,var(--info) 8%,var(--surface));
+         border-radius:0 10px 10px 0; padding:14px 18px; margin:18px 0; font-size:.94rem; }
+  .note .lbl{ font-family:"IBM Plex Mono",monospace; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+              color:var(--info); font-weight:600; display:block; margin-bottom:3px; }
+
+  /* ---- FIGURES ---- */
+  figure{ margin:26px 0; }
+  figure svg{ display:block; width:100%; height:auto; background:var(--surface); border:1px solid var(--line);
+              border-radius:var(--radius); box-shadow:var(--shadow); }
+  figcaption{ font-size:.86rem; color:var(--ink-faint); margin-top:10px; padding-left:2px; }
+  figcaption b{ color:var(--ink-soft); font-weight:600; }
+  .fig-scroll{ overflow-x:auto; }
+
+  /* ---- TABLES ---- */
+  .tbl-scroll{ overflow-x:auto; margin:22px 0; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  table{ border-collapse:collapse; width:100%; font-size:.9rem; background:var(--surface); min-width:520px; }
+  th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  thead th{ font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase;
+            color:var(--ink-faint); background:var(--surface-2); font-weight:600; }
+  tbody tr:last-child td{ border-bottom:none; }
+  td.mono,th.mono{ font-family:"IBM Plex Mono",monospace; }
+  .swatch{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:6px; border:1px solid rgba(0,0,0,.15); }
+  .num{ font-variant-numeric:tabular-nums; }
+
+  /* ---- STEP LIST ---- */
+  ul.clean{ list-style:none; padding:0; margin:1em 0; }
+  ul.clean li{ position:relative; padding-left:26px; margin:.5em 0; }
+  ul.clean li::before{ content:""; position:absolute; left:4px; top:.62em; width:7px; height:7px; border-radius:2px;
+                       background:var(--accent); transform:rotate(45deg); }
+  ol.steps{ counter-reset:st; list-style:none; padding:0; margin:1em 0; }
+  ol.steps > li{ counter-increment:st; position:relative; padding:2px 0 2px 42px; margin:.55em 0; }
+  ol.steps > li::before{ content:counter(st); position:absolute; left:0; top:0; width:28px; height:28px;
+    background:var(--surface-2); border:1px solid var(--line-strong); color:var(--accent-deep); border-radius:8px;
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:.82rem; display:flex; align-items:center; justify-content:center; }
+
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:.76rem;
+         padding:3px 9px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface); white-space:nowrap; }
+  .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+
+  footer{ margin-top:70px; padding-top:26px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.85rem; }
+  ::selection{ background:color-mix(in srgb,var(--accent) 26%,transparent); }
+  @media (prefers-reduced-motion:no-preference){ html{ scroll-behavior:smooth; } }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker"><span class="dotmark"></span><span>Grupo EPM · Centro de Gestión Servicios Técnicos</span></div>
+  <h1>Plataforma Control Integral PNAs</h1>
+  <p class="lead">Guía de implementación de cero a 100: cómo se proyectó, construyó y opera la plataforma para gestionar el ciclo de vida de los permisos geoespaciales (PNAs). Pensada para que cualquier persona pueda entenderla y replicarla.</p>
+  <div class="meta">
+    <span class="tag">Ámbito: <b>5 tipos de permiso</b></span>
+    <span class="tag">Arquitectura: <b>100% navegador</b></span>
+    <span class="tag">Almacén: <b>KMZ + GitHub</b></span>
+    <span class="tag">Versión guía: <b>1.0</b></span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>En este documento</h2>
+  <ol>
+    <li><a href="#que-es">Qué es y qué problema resuelve</a></li>
+    <li><a href="#permisos">Los 5 permisos y sus reglas</a></li>
+    <li><a href="#arquitectura">Arquitectura y flujo de datos</a></li>
+    <li><a href="#catalogo">Paso 1 · El catálogo (fuente única)</a></li>
+    <li><a href="#kmz">Paso 2 · El KMZ como almacén</a></li>
+    <li><a href="#generador">Paso 3 · El Generador de KMZ</a></li>
+    <li><a href="#avance">Paso 4 · Estados y % de avance</a></li>
+    <li><a href="#semaforos">Paso 5 · Los semáforos (reglas)</a></li>
+    <li><a href="#itinerancia">Paso 6 · Itinerancia en el mapa</a></li>
+    <li><a href="#dashboard">Paso 7 · El Dashboard</a></li>
+    <li><a href="#recorrido">Paso 8 · Recorrido temporal</a></li>
+    <li><a href="#operacion">Paso 9 · Publicación y operación</a></li>
+    <li><a href="#convenciones">Glosario de convenciones</a></li>
+  </ol>
+</nav>
+
+<section id="que-es">
+  <div class="sec-head"><span class="sec-num">00</span><h2 class="sec-title">Qué es y qué problema resuelve</h2></div>
+  <div class="measure">
+    <p>Un <strong>PNA</strong> (Permiso No Ambiental) es una autorización que un tercero —un municipio, INVIAS, la ANI, la Gobernación— debe otorgar antes de intervenir una vía o su zona. Cada proyecto de infraestructura de EPM puede necesitar varios, cada uno con su propia autoridad, su plazo legal y su fecha en la que el proyecto lo necesita.</p>
+    <p>El reto no es solo <em>listar</em> los permisos, sino <strong>saber a tiempo cuáles están en riesgo</strong>: si no se radica pronto, o si la autoridad no responderá antes de que el proyecto lo requiera. La plataforma convierte esa información dispersa en un tablero geoespacial con semáforos que se leen de un vistazo.</p>
+  </div>
+  <div class="why"><span class="lbl">Por qué surge</span> La gestión se perdía entre correos y archivos sueltos. Se necesitaba un <b>lugar único</b>, visual y ubicado en el mapa, que respondiera dos preguntas por cada permiso: <b>¿se inició a tiempo?</b> y <b>¿se obtendrá a tiempo?</b></p></div>
+</section>
+
+<section id="permisos">
+  <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Los 5 permisos y sus reglas</h2></div>
+  <p class="measure">Todo el sistema gira alrededor de cinco tipos de permiso. Cada uno tiene una autoridad competente, un plazo legal de gestión y un color con el que se pinta en el mapa.</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>PNA</th><th>Autoridad</th><th>Plazo de gestión</th><th>Color en el mapa</th><th>Nota</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">PMT_Diseño</td><td>Municipio · Sec. Movilidad</td><td class="num">15 días hábiles</td><td><span class="swatch" style="background:#2E7D32"></span>Verde bosque</td><td>Ciclo corto</td></tr>
+        <tr><td class="mono">PUZV</td><td>INVIAS</td><td class="num">12 meses</td><td><span class="swatch" style="background:#1565C0"></span>Azul</td><td>Uso de zona de vía</td></tr>
+        <tr><td class="mono">Cierre_Via</td><td>INVIAS</td><td class="num">3 meses</td><td><span class="swatch" style="background:#00897B"></span>Verde azulado</td><td>—</td></tr>
+        <tr><td class="mono">PUOI-IVCF</td><td>ANI</td><td class="num">12 meses</td><td><span class="swatch" style="background:#6A1B9A"></span>Morado</td><td>Requiere Concesión vial</td></tr>
+        <tr><td class="mono">PIV</td><td>Gobernación de Antioquia</td><td class="num">12 meses</td><td><span class="swatch" style="background:#C2185B"></span>Magenta</td><td>Intervención vial</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="why"><span class="lbl">Por qué estos colores</span> Son <b>deliberadamente distintos</b> a la paleta verde/amarillo/rojo de los semáforos, para que el color del permiso (identidad) nunca se confunda con el color del riesgo (alerta).</div>
+</section>
+
+<section id="arquitectura">
+  <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Arquitectura y flujo de datos</h2></div>
+  <p class="measure">La plataforma son dos páginas web autónomas (un <strong>Generador</strong> y un <strong>Dashboard</strong>) que se comunican a través de archivos <strong>KMZ</strong> guardados en un repositorio de GitHub. No hay servidor ni base de datos: todo corre en el navegador.</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 860 300" role="img" aria-label="Flujo: el Generador exporta un KMZ que se guarda en la carpeta del repositorio; tras un push, el Dashboard lo lee y muestra el tablero.">
+      <defs>
+        <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 9 3, 0 6" fill="var(--accent)"/></marker>
+      </defs>
+      <!-- Generador -->
+      <rect x="24" y="96" width="176" height="108" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="112" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="600" fill="var(--ink)">GENERADOR</text>
+      <text x="112" y="150" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">Importa · edita</text>
+      <text x="112" y="167" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">historial · exporta</text>
+      <text x="112" y="190" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink-faint)">.html</text>
+      <!-- KMZ file -->
+      <rect x="300" y="104" width="150" height="92" rx="12" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="375" y="134" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="600" fill="var(--accent-deep)">KMZ</text>
+      <text x="375" y="154" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">CódigoBanco_</text>
+      <text x="375" y="170" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">Proyecto.kmz</text>
+      <!-- Repo folder -->
+      <rect x="300" y="228" width="150" height="56" rx="10" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="375" y="252" text-anchor="middle" font-family="IBM Plex Mono" font-size="11.5" font-weight="600" fill="var(--ink)">01_KMZ_Entrada/</text>
+      <text x="375" y="270" text-anchor="middle" font-family="IBM Plex Sans" font-size="10.5" fill="var(--ink-faint)">carpeta en GitHub</text>
+      <!-- Dashboard -->
+      <rect x="560" y="96" width="276" height="108" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="698" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="13" font-weight="600" fill="var(--ink)">DASHBOARD</text>
+      <text x="698" y="150" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">Lee todos los KMZ · calcula</text>
+      <text x="698" y="167" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">semáforos · mapa · gráficos</text>
+      <text x="698" y="190" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink-faint)">.html</text>
+      <!-- Catalog -->
+      <rect x="300" y="24" width="150" height="52" rx="10" fill="none" stroke="var(--lima)" stroke-dasharray="5 4"/>
+      <text x="375" y="46" text-anchor="middle" font-family="IBM Plex Mono" font-size="11.5" font-weight="600" fill="var(--lima)">tipos_permiso.json</text>
+      <text x="375" y="63" text-anchor="middle" font-family="IBM Plex Sans" font-size="10.5" fill="var(--ink-faint)">fuente única de verdad</text>
+      <!-- arrows -->
+      <line x1="200" y1="150" x2="296" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="248" y="142" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink-soft)">exporta</text>
+      <line x1="375" y1="196" x2="375" y2="226" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="420" y="216" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-soft)">guardar+push</text>
+      <line x1="450" y1="150" x2="556" y2="150" stroke="var(--accent)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="503" y="142" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink-soft)">lee</text>
+      <line x1="375" y1="76" x2="375" y2="102" stroke="var(--lima)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <line x1="450" y1="50" x2="620" y2="50" stroke="var(--lima)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <line x1="620" y1="50" x2="620" y2="94" stroke="var(--lima)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="150" y="50" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-faint)">Ambas páginas leen</text>
+      <text x="150" y="66" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-faint)">el mismo catálogo</text>
+    </svg>
+    <figcaption><b>Figura 1.</b> El KMZ es el vehículo de datos; el catálogo (línea punteada) define las reglas que ambas páginas obedecen. Cambiar una regla se hace en el catálogo, no en el código.</figcaption>
+  </figure>
+
+  <h3>Tecnologías</h3>
+  <ul class="clean">
+    <li>Páginas HTML autónomas con librerías por CDN: <strong>Leaflet</strong> (mapa), <strong>JSZip</strong> (leer/escribir KMZ), <strong>Bootstrap</strong>, <strong>DataTables</strong> y <strong>Select2</strong>.</li>
+    <li>Gráficos dibujados en <strong>SVG puro</strong> (sin librerías de charts).</li>
+    <li><strong>Sin backend</strong>: se publica como sitio estático (GitHub Pages) y persiste con los KMZ del repositorio.</li>
+  </ul>
+</section>
+
+<section id="catalogo">
+  <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">Paso 1 · El catálogo, la fuente única de verdad</h2></div>
+  <p class="measure">Antes de escribir una sola pantalla se define <code>tipos_permiso.json</code>. Aquí viven las reglas de los 5 permisos: autoridad, plazo, lista de estados, porcentaje de avance por estado y color. <strong>El Generador y el Dashboard leen de aquí</strong>: para cambiar una regla se edita este archivo, no los programas.</p>
+  <div class="card">
+    <p style="margin-top:0"><strong>Qué contiene cada permiso en el catálogo:</strong></p>
+    <ul class="clean">
+      <li><code>pna</code>, <code>autoridad</code>, <code>tiempo_gestion</code> (valor + unidad: días hábiles o meses).</li>
+      <li><code>estados_tramite</code>: la secuencia de estados posibles (empieza en <code>No iniciado</code>).</li>
+      <li><code>avance_estados</code>: el <strong>% de avance</strong> que representa cada estado.</li>
+      <li><code>color</code> y <code>requiere_concesion</code> (solo ANI).</li>
+    </ul>
+    <p style="margin-bottom:0">También guarda las listas comunes: municipios y los <strong>4 negocios</strong> (<code>Ger_Acueducto-Alcantarillado</code>, <code>Ger_Gas</code>, <code>Ger_Transmisión-Distribución</code>, <code>Ger_Generación</code>).</p>
+  </div>
+  <div class="note"><span class="lbl">Detalle técnico</span> Cada página incluye una copia de respaldo del catálogo embebida (semilla), por si el JSON no carga. Así la herramienta nunca queda en blanco.</div>
+</section>
+
+<section id="kmz">
+  <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Paso 2 · El KMZ como almacén del historial</h2></div>
+  <p class="measure">Cada proyecto tiene <strong>un KMZ</strong> (nombrado <code>CódigoBanco_Proyecto.kmz</code>). Dentro, cada permiso es una geometría (punto, línea o polígono) y toda su información viaja en el campo <em>descripción</em>, con el <strong>historial acumulado</strong> como una lista.</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 236" role="img" aria-label="Estructura de un permiso dentro del KMZ: datos de identidad, datos deducidos del catálogo, e historial que se acumula fila por fila.">
+      <rect x="20" y="20" width="240" height="196" rx="11" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="36" y="46" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--accent-deep)">IDENTIDAD (admin)</text>
+      <text x="36" y="70" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Código Banco · Proyecto</text>
+      <text x="36" y="90" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Negocio · Estado · Fase</text>
+      <text x="36" y="110" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Municipio · Contrato</text>
+      <text x="36" y="134" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Frente · PNA</text>
+      <text x="36" y="158" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Fecha límite requerida</text>
+      <text x="36" y="176" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Holgura (días)</text>
+      <text x="36" y="200" font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink-faint)">+ geometría</text>
+
+      <rect x="290" y="20" width="210" height="196" rx="11" fill="none" stroke="var(--lima)" stroke-dasharray="5 4"/>
+      <text x="306" y="46" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--lima)">DEDUCIDO (catálogo)</text>
+      <text x="306" y="72" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Autoridad</text>
+      <text x="306" y="92" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Tiempo de gestión</text>
+      <text x="306" y="112" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Estados posibles</text>
+      <text x="306" y="132" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">% de avance por estado</text>
+      <text x="306" y="168" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-faint)">No se escribe a mano:</text>
+      <text x="306" y="185" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-faint)">sale del PNA elegido.</text>
+
+      <rect x="530" y="20" width="270" height="196" rx="11" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="546" y="46" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--accent-deep)">HISTORIAL (se acumula)</text>
+      <rect x="546" y="58" width="238" height="34" rx="7" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="556" y="79" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink)">1 · Radicado · 01/08 · rad. INV1234</text>
+      <rect x="546" y="98" width="238" height="34" rx="7" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="556" y="119" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink)">2 · Observado · 23/08</text>
+      <rect x="546" y="138" width="238" height="34" rx="7" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="556" y="159" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink)">3 · Resolución_Aprobatoria · 26/08</text>
+      <text x="546" y="192" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-faint)">Cada avance = una fila nueva,</text>
+      <text x="546" y="207" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-faint)">conservando las anteriores.</text>
+    </svg>
+    <figcaption><b>Figura 2.</b> Una sola geometría por permiso. El historial <b>no</b> crea geometrías nuevas: cada estado se añade como una fila más dentro del mismo permiso.</figcaption>
+  </figure>
+
+  <div class="why"><span class="lbl">Por qué en el KMZ</span> El KMZ es portátil, abre en Google Earth y no requiere base de datos. Al ser el <b>almacén oficial</b>, la trazabilidad completa viaja con el archivo del proyecto.</div>
+</section>
+
+<section id="generador">
+  <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Paso 3 · El Generador de KMZ</h2></div>
+  <p class="measure">Es la herramienta de captura. Se opera en cuatro bloques, de arriba hacia abajo:</p>
+  <ol class="steps">
+    <li><strong>Base de proyectos</strong> (con clave de administrador). Se registra una sola vez cada proyecto: Código Banco, Proyecto, Negocio, Estado, Fase, Municipio, Contrato. Luego se reutiliza en cada permiso.</li>
+    <li><strong>Datos del permiso.</strong> Se elige el proyecto (autollena su identidad), el PNA, el Frente, la <strong>Fecha límite requerida</strong> (obligatoria) y la holgura. La autoridad y el plazo se deducen solos. El nombre se arma automático: <code>PNA_CódigoBanco_Frente</code>.</li>
+    <li><strong>Geometría.</strong> Se dibuja o importa el punto, línea o polígono del permiso.</li>
+    <li><strong>Historial.</strong> Se agrega el estado actual del trámite (con radicado, fechas, observación). Para actualizar un permiso: se importa su KMZ, se añade una fila de historial y se vuelve a exportar.</li>
+  </ol>
+  <div class="note"><span class="lbl">Regla de calidad</span> La <b>Fecha límite requerida es obligatoria</b>: sin ella el Dashboard no puede calcular los semáforos. El Generador bloquea el guardado si falta.</div>
+</section>
+
+<section id="avance">
+  <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Paso 4 · Estados del trámite y % de avance</h2></div>
+  <p class="measure">Cada estado del trámite tiene asignado un porcentaje de avance en el catálogo. Ese porcentaje es el que alimenta la barra de avance y define cuándo un permiso está <strong>obtenido</strong> (100%).</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 210" role="img" aria-label="Línea de avance por estado para permisos de ciclo largo, desde No iniciado 0% hasta Gestión Acta Inicio 100%.">
+      <line x1="40" y1="70" x2="792" y2="70" stroke="var(--line-strong)" stroke-width="2"/>
+      <!-- nodes -->
+      <g font-family="IBM Plex Mono" font-size="10.5" fill="var(--ink)">
+        <circle cx="40" cy="70" r="7" fill="var(--surface)" stroke="var(--ink-faint)" stroke-width="2"/>
+        <text x="40" y="52" text-anchor="middle" font-weight="600">0%</text>
+        <text x="40" y="96" text-anchor="middle" fill="var(--ink-soft)">No iniciado</text>
+
+        <circle cx="165" cy="70" r="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="165" y="52" text-anchor="middle" font-weight="600">10%</text>
+        <text x="165" y="96" text-anchor="middle" fill="var(--ink-soft)">Radicado</text>
+
+        <circle cx="290" cy="70" r="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="290" y="52" text-anchor="middle" font-weight="600">20%</text>
+        <text x="290" y="96" text-anchor="middle" fill="var(--ink-soft)">Observado</text>
+
+        <circle cx="415" cy="70" r="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="415" y="52" text-anchor="middle" font-weight="600">50%</text>
+        <text x="415" y="96" text-anchor="middle" fill="var(--ink-soft)">Revisión_Ajustes</text>
+
+        <circle cx="540" cy="70" r="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="540" y="52" text-anchor="middle" font-weight="600">80%</text>
+        <text x="540" y="96" text-anchor="middle" fill="var(--ink-soft)">Resol. Aprobatoria</text>
+
+        <circle cx="665" cy="70" r="7" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="665" y="52" text-anchor="middle" font-weight="600">90%</text>
+        <text x="665" y="96" text-anchor="middle" fill="var(--ink-soft)">Gestión_Pólizas</text>
+
+        <circle cx="792" cy="70" r="8" fill="var(--ok)" stroke="var(--ok)" stroke-width="2"/>
+        <text x="792" y="52" text-anchor="middle" font-weight="600" fill="var(--ok)">100%</text>
+        <text x="792" y="96" text-anchor="end" fill="var(--ink-soft)">Acta de Inicio</text>
+      </g>
+      <rect x="40" y="140" width="752" height="46" rx="9" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="56" y="162" font-family="IBM Plex Mono" font-size="10.5" font-weight="600" fill="var(--accent-deep)">PMT_DISEÑO (ciclo corto)</text>
+      <text x="56" y="179" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">No iniciado 0% → Radicado 10% → Aprobado / Negado 100%</text>
+    </svg>
+    <figcaption><b>Figura 3.</b> El avance no es lineal en el tiempo: refleja qué tan cerca está el trámite de quedar <b>activado</b>. Al llegar a la activación (Acta de Inicio / Suspensión / Reinicio), el permiso está obtenido.</figcaption>
+  </figure>
+</section>
+
+<section id="semaforos">
+  <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Paso 5 · Los semáforos (el corazón del sistema)</h2></div>
+  <p class="measure">Cada permiso se evalúa con <strong>dos preguntas</strong>, y cada una tiene su semáforo. Entender esto es entender toda la plataforma.</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 250" role="img" aria-label="Dos semáforos: Inicio pregunta si se radicó a tiempo; Obtención pregunta si se obtendrá antes de la fecha límite.">
+      <!-- INICIO -->
+      <rect x="20" y="24" width="370" height="200" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="40" y="52" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="var(--accent-deep)">SEMÁFORO DE INICIO</text>
+      <text x="40" y="74" font-family="IBM Plex Sans" font-size="13" fill="var(--ink)">¿Se radicó (inició) a tiempo?</text>
+      <circle cx="52" cy="108" r="7" fill="var(--ok)"/><text x="70" y="113" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Ya radicado → <tspan font-weight="600">Iniciado</tspan></text>
+      <circle cx="52" cy="140" r="7" fill="var(--warn)"/><text x="70" y="145" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Sin radicar → urgencia según días</text>
+      <text x="70" y="162" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink-soft)">para radicar antes de la fecha máxima.</text>
+      <circle cx="52" cy="192" r="7" fill="var(--alert)"/><text x="70" y="197" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Sin fecha límite → <tspan font-weight="600">⚠ falta dato</tspan></text>
+      <!-- OBTENCION -->
+      <rect x="430" y="24" width="370" height="200" rx="12" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+      <text x="450" y="52" font-family="IBM Plex Mono" font-size="12" font-weight="600" fill="var(--accent-deep)">SEMÁFORO DE OBTENCIÓN</text>
+      <text x="450" y="74" font-family="IBM Plex Sans" font-size="13" fill="var(--ink)">¿Se obtendrá antes del límite?</text>
+      <circle cx="462" cy="108" r="7" fill="var(--ok)"/><text x="480" y="113" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Listo / Activado → <tspan font-weight="600">Obtenido</tspan></text>
+      <circle cx="462" cy="140" r="7" fill="var(--risk)"/><text x="480" y="145" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">En trámite → días hábiles al límite</text>
+      <text x="480" y="162" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink-soft)">(verde / amarillo / rojo).</text>
+      <circle cx="462" cy="192" r="7" fill="var(--alert)"/><text x="480" y="197" font-family="IBM Plex Sans" font-size="12.5" fill="var(--ink)">Sin fecha límite → <tspan font-weight="600">⚠ falta dato</tspan></text>
+    </svg>
+    <figcaption><b>Figura 4.</b> Antes de radicar, lo crítico es <b>iniciar</b>; una vez radicado, lo crítico es <b>obtener</b>. Por eso el mapa y las listas muestran el semáforo de la etapa que corresponde.</figcaption>
+  </figure>
+
+  <h3>Umbrales del semáforo de obtención (riesgo)</h3>
+  <p class="measure">El riesgo se mide en <strong>días hábiles que faltan hasta la fecha límite</strong> del proyecto (menos la holgura). Los umbrales dependen del tipo de permiso, porque un PMT se gestiona en días y los demás en meses.</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Tipo</th><th><span class="dot" style="background:var(--ok);display:inline-block;margin-right:6px"></span>Verde · en plazo</th><th><span class="dot" style="background:var(--warn);display:inline-block;margin-right:6px"></span>Amarillo · próximo</th><th><span class="dot" style="background:var(--risk);display:inline-block;margin-right:6px"></span>Rojo · en riesgo</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Los demás (meses)</td><td class="num">≥ 45 días háb.</td><td class="num">30 – 45</td><td class="num">&lt; 30 (incl. vencido)</td></tr>
+        <tr><td class="mono">PMT_Diseño</td><td class="num">≥ 30 días háb.</td><td class="num">20 – 30</td><td class="num">&lt; 20 (incl. vencido)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="why"><span class="lbl">Por qué proximidad al límite y no proyección</span> Antes se proyectaba el plazo completo desde la radicación, y eso marcaba en riesgo trámites que iban bien. Ahora el <b>avance</b> lo mide el % por estado, y el <b>riesgo</b> mide solo si se acerca (o pasa) la fecha en que el proyecto necesita el permiso.</div>
+
+  <h3>¿Cuándo un permiso está "Listo / Activado"?</h3>
+  <ul class="clean">
+    <li><strong>PMT_Diseño:</strong> solo cuando el estado es <code>Aprobado</code>. Un <code>Negado</code> obliga a re-radicar, así que el reloj sigue corriendo.</li>
+    <li><strong>Los demás:</strong> cuando alcanzan el 100% de avance (Acta de Inicio, Suspensión o Reinicio).</li>
+  </ul>
+</section>
+
+<section id="itinerancia">
+  <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">Paso 6 · Itinerancia (el pulso en el mapa)</h2></div>
+  <p class="measure">La <strong>itinerancia</strong> es un contorno que <em>titila</em> sobre la geometría del permiso mientras no esté obtenido. La velocidad del parpadeo comunica la urgencia sin tener que leer un número.</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 176" role="img" aria-label="Tres velocidades de itinerancia: verde lenta, amarillo media, rojo rápida; desaparece cuando el permiso está listo.">
+      <g>
+        <circle cx="120" cy="66" r="26" fill="none" stroke="#00A651" stroke-width="4"/>
+        <circle cx="120" cy="66" r="9" fill="#00A651"/>
+        <text x="120" y="122" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">LENTA</text>
+        <text x="120" y="140" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">holgura amplia</text>
+      </g>
+      <g>
+        <circle cx="330" cy="66" r="26" fill="none" stroke="#F2C200" stroke-width="4"/>
+        <circle cx="330" cy="66" r="9" fill="#F2C200"/>
+        <text x="330" y="122" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">MEDIA</text>
+        <text x="330" y="140" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">se acerca la fecha</text>
+      </g>
+      <g>
+        <circle cx="540" cy="66" r="26" fill="none" stroke="#E53935" stroke-width="4"/>
+        <circle cx="540" cy="66" r="9" fill="#E53935"/>
+        <text x="540" y="122" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">RÁPIDA</text>
+        <text x="540" y="140" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">urgente / vencido</text>
+      </g>
+      <g>
+        <circle cx="730" cy="66" r="26" fill="none" stroke="var(--line-strong)" stroke-width="2" stroke-dasharray="4 4"/>
+        <circle cx="730" cy="66" r="9" fill="var(--ok)"/>
+        <text x="730" y="122" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">SIN PULSO</text>
+        <text x="730" y="140" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">obtenido / listo</text>
+      </g>
+    </svg>
+    <figcaption><b>Figura 5.</b> La itinerancia cubre todo el ciclo hasta la obtención. <b>Sin radicar</b>: cuenta los días hábiles hasta la <b>fecha máxima de radicación</b>. <b>En proceso</b>: los días hábiles hasta el <b>límite</b>. Los umbrales son los mismos del semáforo de obtención.</figcaption>
+  </figure>
+
+  <h3>La fecha máxima de radicación</h3>
+  <p class="measure">Es la fecha límite para <em>empezar</em> el trámite y aún llegar a tiempo. Se calcula hacia atrás desde la fecha en que el proyecto necesita el permiso:</p>
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 150" role="img" aria-label="La fecha máxima de radicación es la fecha límite menos el plazo de gestión menos la holgura.">
+      <line x1="40" y1="80" x2="792" y2="80" stroke="var(--line-strong)" stroke-width="2"/>
+      <circle cx="120" cy="80" r="7" fill="var(--warn)"/>
+      <text x="120" y="56" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" font-weight="600" fill="var(--ink)">Fecha máx.</text>
+      <text x="120" y="112" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">de radicación</text>
+      <circle cx="792" cy="80" r="7" fill="var(--risk)"/>
+      <text x="792" y="56" text-anchor="end" font-family="IBM Plex Sans" font-size="12" font-weight="600" fill="var(--ink)">Fecha límite</text>
+      <text x="792" y="112" text-anchor="end" font-family="IBM Plex Sans" font-size="12" fill="var(--ink-soft)">requerida (proyecto)</text>
+      <line x1="120" y1="80" x2="640" y2="80" stroke="var(--accent)" stroke-width="6" opacity="0.35"/>
+      <text x="380" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--accent-deep)">plazo de gestión</text>
+      <line x1="640" y1="80" x2="792" y2="80" stroke="var(--lima)" stroke-width="6" opacity="0.5"/>
+      <text x="716" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--lima)">holgura</text>
+    </svg>
+    <figcaption><b>Figura 6.</b> <span class="mono">Fecha máx. radicación = Fecha límite − plazo de gestión − holgura</span>. Si esa fecha ya pasó y no se ha radicado, la itinerancia va en rojo.</figcaption>
+  </figure>
+</section>
+
+<section id="dashboard">
+  <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Paso 7 · El Dashboard</h2></div>
+  <p class="measure">El tablero lee todos los KMZ de la carpeta, calcula los semáforos y presenta la información en cinco zonas:</p>
+
+  <figure class="fig-scroll">
+    <svg viewBox="0 0 820 380" role="img" aria-label="Distribución del dashboard: KPIs arriba, cuatro gráficos, filtros con recorrido temporal a la izquierda, mapa a la derecha, y tabla completa abajo.">
+      <!-- KPIs -->
+      <rect x="20" y="20" width="780" height="46" rx="9" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="34" y="40" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-faint)">KPIs</text>
+      <text x="34" y="57" font-family="IBM Plex Sans" font-size="12" fill="var(--ink)">Permisos · Activados/Obtenidos · En gestión · En riesgo (Permisos | Proyectos)</text>
+      <!-- charts -->
+      <rect x="20" y="78" width="186" height="70" rx="9" fill="var(--surface)" stroke="var(--line)"/><text x="113" y="118" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">Avance del trámite</text>
+      <rect x="217" y="78" width="186" height="70" rx="9" fill="var(--surface)" stroke="var(--line)"/><text x="310" y="118" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">Permisos por Proyecto</text>
+      <rect x="414" y="78" width="186" height="70" rx="9" fill="var(--surface)" stroke="var(--line)"/><text x="507" y="118" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">Permisos por Negocio</text>
+      <rect x="611" y="78" width="189" height="70" rx="9" fill="var(--surface)" stroke="var(--line)"/><text x="705" y="118" text-anchor="middle" font-family="IBM Plex Sans" font-size="11.5" fill="var(--ink-soft)">Permisos por Autoridad</text>
+      <!-- filters + map -->
+      <rect x="20" y="160" width="250" height="150" rx="9" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="145" y="196" text-anchor="middle" font-family="IBM Plex Sans" font-size="12.5" font-weight="600" fill="var(--ink)">Filtros (9)</text>
+      <text x="145" y="230" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-soft)">PNA · Autoridad · Municipio</text>
+      <text x="145" y="247" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-soft)">Negocio · Frente · Estado…</text>
+      <rect x="36" y="264" width="218" height="34" rx="7" fill="none" stroke="var(--lima)" stroke-dasharray="5 4"/>
+      <text x="145" y="285" text-anchor="middle" font-family="IBM Plex Mono" font-size="10.5" fill="var(--lima)">🕑 Recorrido temporal</text>
+      <rect x="282" y="160" width="518" height="150" rx="9" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.3"/>
+      <text x="541" y="238" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" font-weight="600" fill="var(--accent-deep)">MAPA</text>
+      <text x="541" y="258" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" fill="var(--ink-soft)">geometrías + itinerancia + leyenda</text>
+      <!-- table -->
+      <rect x="20" y="322" width="780" height="42" rx="9" fill="var(--surface-2)" stroke="var(--line)"/>
+      <text x="410" y="348" text-anchor="middle" font-family="IBM Plex Sans" font-size="12" fill="var(--ink)">Tabla “Información_Trámites_PNA” — todos los campos + Inicio / Obtención + exportar a Excel</text>
+    </svg>
+    <figcaption><b>Figura 7.</b> De lo general (KPIs y gráficos) al detalle (mapa y tabla). Los filtros afectan a todo el tablero a la vez.</figcaption>
+  </figure>
+
+  <h3>Detalle de cada zona</h3>
+  <ul class="clean">
+    <li><strong>KPIs:</strong> Permisos (total) · Activados/Obtenidos · En gestión (radicó pero &lt;100%) · En riesgo, dividido en Permisos y Proyectos.</li>
+    <li><strong>Avance del trámite:</strong> barras horizontales agrupadas Negocio › Proyecto › Permisos.</li>
+    <li><strong>Permisos por Proyecto:</strong> por cada permiso, sus dos semáforos (Inicio / Obtención).</li>
+    <li><strong>Por Negocio y por Autoridad:</strong> distribución sobre las 4 categorías fijas.</li>
+    <li><strong>Mapa:</strong> geometría de cada permiso en su color; al pasar el cursor, un popup con Proyecto, Frente, PNA, Municipio, Autoridad, estado, % y el semáforo de su etapa.</li>
+    <li><strong>Tabla:</strong> todos los trámites, con columnas Inicio y Obtención idénticas a las del panel superior, y exportación a Excel.</li>
+  </ul>
+</section>
+
+<section id="recorrido">
+  <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Paso 8 · Recorrido temporal</h2></div>
+  <p class="measure">Permite <strong>mover la “fecha de análisis”</strong> y ver cómo estaba (o estará) la gestión en una fecha distinta a hoy. Al moverla, <strong>los semáforos y la itinerancia se recalculan</strong> como si ese día fuera hoy. Los permisos que aún no habían iniciado gestión en esa fecha <strong>no aparecen en el mapa</strong>, y van apareciendo a medida que el recorrido avanza.</p>
+  <div class="note"><span class="lbl">Componentes</span> Inicio y fin del recorrido, “avanzar cada” (días/semanas/meses), velocidad, barra deslizante, y los botones Iniciar / Detener / Volver a hoy. Está en la zona de Filtros.</div>
+</section>
+
+<section id="operacion">
+  <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">Paso 9 · Publicación y operación diaria</h2></div>
+  <ol class="steps">
+    <li>Coloca los logos oficiales (<code>Logo_INVIAS.png</code>, <code>Logo_ANI.png</code>, <code>Logo_Gob.png</code>, <code>Logo_EPM.png</code>) en la raíz del repositorio y publica el sitio (GitHub Pages).</li>
+    <li>Para cada avance: abre el Generador, importa el KMZ del proyecto, agrega la fila de historial (o un permiso nuevo) y exporta.</li>
+    <li>Guarda el KMZ en <code>01_KMZ_Entrada/</code> reemplazando la versión anterior del mismo proyecto.</li>
+    <li>Haz <strong>commit + push</strong> a GitHub.</li>
+    <li>En el Dashboard, usa <strong>🔄 Recargar del repositorio</strong> (o recarga la página) y verás la información actualizada.</li>
+  </ol>
+  <div class="why"><span class="lbl">Regla de oro</span> El Dashboard lee la carpeta <b>de GitHub</b>, no tu disco local. Guardar el KMZ en tu carpeta no basta: hay que subirlo (commit + push) para que el equipo lo vea.</div>
+</section>
+
+<section id="convenciones">
+  <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Glosario de convenciones</h2></div>
+
+  <h3>Color de cada permiso (identidad)</h3>
+  <div class="card" style="display:flex;flex-wrap:wrap;gap:10px 20px">
+    <span class="pill"><span class="dot" style="background:#2E7D32"></span>PMT_Diseño</span>
+    <span class="pill"><span class="dot" style="background:#1565C0"></span>PUZV</span>
+    <span class="pill"><span class="dot" style="background:#00897B"></span>Cierre_Via</span>
+    <span class="pill"><span class="dot" style="background:#6A1B9A"></span>PUOI-IVCF</span>
+    <span class="pill"><span class="dot" style="background:#C2185B"></span>PIV</span>
+  </div>
+
+  <h3>Semáforos y alerta de dato</h3>
+  <div class="card" style="display:flex;flex-wrap:wrap;gap:10px 20px">
+    <span class="pill"><span class="dot" style="background:var(--ok)"></span>Verde · en plazo / ok</span>
+    <span class="pill"><span class="dot" style="background:var(--warn)"></span>Amarillo · por vencer</span>
+    <span class="pill"><span class="dot" style="background:var(--risk)"></span>Rojo · en riesgo / vencido</span>
+    <span class="pill"><span class="dot" style="background:var(--alert)"></span>⚠ Naranja · falta fecha límite</span>
+  </div>
+
+  <h3>Geometría e itinerancia en el mapa</h3>
+  <div class="card" style="display:flex;flex-wrap:wrap;gap:10px 20px">
+    <span class="pill">● Punto</span>
+    <span class="pill">— Línea</span>
+    <span class="pill">▭ Polígono</span>
+    <span class="pill"><span class="dot" style="background:#00A651"></span>Itinerancia lenta</span>
+    <span class="pill"><span class="dot" style="background:#F2C200"></span>media</span>
+    <span class="pill"><span class="dot" style="background:#E53935"></span>rápida</span>
+  </div>
+  <p class="measure" style="color:var(--ink-soft);font-size:.94rem">Al alejar el zoom, cada geometría <strong>crece</strong> para no perderse de vista; no se añaden marcas ajenas a la geometría de cada permiso.</p>
+</section>
+
+<footer>
+  <p><strong>Plataforma Control Integral PNAs</strong> · Grupo EPM · Centro de Gestión Servicios Técnicos.<br>
+  Documento de implementación · el catálogo <span class="mono">tipos_permiso.json</span> es la fuente única de verdad; cualquier cambio de reglas se hace allí.</p>
+</footer>
+
+</div>
