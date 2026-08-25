@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Control Integral PNAs · Grupo EPM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{ --verde:#009300; --verde-osc:#0b6b34; --lima:#b7c200; --ink:#16231c; --soft:#48584f; --bg:#f2f6f2; --card:#fff; --line:#d6e1d8; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif; }
+  header{ background:#fff; border-bottom:4px solid var(--verde); padding:14px 22px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+  header .brand{ font-weight:700; color:var(--verde); font-size:1.15rem; }
+  header .sub{ color:var(--soft); font-size:.82rem; margin-left:auto; }
+  .wrap{ max-width:960px; margin:0 auto; padding:40px 22px 80px; }
+  .hero h1{ font-size:2rem; margin:.2em 0 .3em; letter-spacing:-.01em; }
+  .hero p{ color:var(--soft); font-size:1.05rem; max-width:640px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; margin-top:30px; }
+  a.card{ display:block; text-decoration:none; color:inherit; background:var(--card); border:1px solid var(--line);
+          border-radius:14px; padding:22px 22px 20px; box-shadow:0 1px 3px rgba(20,40,25,.07); transition:transform .12s, box-shadow .12s, border-color .12s; }
+  a.card:hover{ transform:translateY(-3px); box-shadow:0 10px 28px rgba(20,40,25,.12); border-color:var(--verde); }
+  a.card .ic{ font-size:1.8rem; }
+  a.card h2{ font-size:1.12rem; margin:10px 0 6px; color:var(--verde-osc); }
+  a.card p{ margin:0; color:var(--soft); font-size:.9rem; line-height:1.5; }
+  a.card .go{ display:inline-block; margin-top:12px; font-weight:600; color:var(--verde); font-size:.86rem; }
+  .primary{ border-left:5px solid var(--verde); }
+  .foot{ margin-top:40px; color:#71827a; font-size:.82rem; }
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Grupo EPM</span>
+  <span style="color:var(--soft)">· Control Integral PNAs</span>
+  <span class="sub">Centro de Gestión Servicios Técnicos</span>
+</header>
+<div class="wrap">
+  <div class="hero">
+    <h1>Plataforma Control Integral PNAs</h1>
+    <p>Gestión del ciclo de vida de los permisos geoespaciales: tablero de seguimiento, generador de KMZ y documentación.</p>
+  </div>
+  <div class="grid">
+    <a class="card primary" href="Plataforma_PNAs.html">
+      <div class="ic">📊</div>
+      <h2>Dashboard</h2>
+      <p>Mapa, semáforos, KPIs, gráficos, filtros y recorrido temporal. Lee automáticamente los KMZ del repositorio.</p>
+      <span class="go">Abrir tablero →</span>
+    </a>
+    <a class="card" href="Generador_KMZ_PNAs.html">
+      <div class="ic">🗂️</div>
+      <h2>Generador de KMZ</h2>
+      <p>Captura de permisos, historial y geometría. Exporta el KMZ y lo publica directo a GitHub (Commit + Push).</p>
+      <span class="go">Abrir generador →</span>
+    </a>
+    <a class="card" href="docs/Guia_Implementacion_PNAs.html">
+      <div class="ic">🗺️</div>
+      <h2>Guía de implementación</h2>
+      <p>Paso a paso, de cero a 100, con convenciones y condiciones de los semáforos. Para entender y replicar.</p>
+      <span class="go">Leer guía →</span>
+    </a>
+    <a class="card" href="docs/Resumen_Ejecutivo_PNAs.html">
+      <div class="ic">🚦</div>
+      <h2>Resumen ejecutivo</h2>
+      <p>Hoja de referencia con el significado de cada convención y espacio del dashboard y del generador.</p>
+      <span class="go">Ver resumen →</span>
+    </a>
+  </div>
+  <p class="foot">El Dashboard lee los KMZ de la carpeta <code>01_KMZ_Entrada/</code>. Para actualizar la información: genera el KMZ y publícalo (Commit + Push) desde el Generador.</p>
+</div>
+</body>
+</html>

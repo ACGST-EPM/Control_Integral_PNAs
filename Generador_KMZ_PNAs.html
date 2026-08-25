@@ -198,6 +198,31 @@
         <div class="card-body2">
           <div id="validBox" class="mini mb-2">Aún no hay permisos cargados.</div>
           <button class="btn epm-btn-green w-100 fw-bold" onclick="exportarKMZ()">⬇️ Generar y descargar KMZ</button>
+
+          <hr class="my-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <b class="mini">🚀 Publicar en GitHub (Commit + Push)</b>
+            <button class="btn btn-sm btn-link p-0 mini" type="button" onclick="document.getElementById('ghCfgBox').classList.toggle('d-none')">⚙️ Configurar</button>
+          </div>
+          <p class="mini text-muted mb-2">Sube el KMZ directo al repositorio y así el Dashboard se actualiza en la URL, sin pasos manuales.</p>
+          <button id="btnPublicar" class="btn epm-btn w-100 fw-bold" onclick="publicarEnGitHub()" disabled>⬆️ Commit + Push del KMZ</button>
+          <div id="ghMsg" class="mini mt-2"></div>
+
+          <div id="ghCfgBox" class="d-none mt-2 p-2" style="background:#f4f8f4;border:1px solid var(--epm-lima);border-radius:8px">
+            <div class="row g-1">
+              <div class="col-6"><label class="mini fw-bold">Owner</label><input id="ghOwner" class="form-control form-control-sm" placeholder="ACGST-EPM"></div>
+              <div class="col-6"><label class="mini fw-bold">Repositorio</label><input id="ghRepo" class="form-control form-control-sm" placeholder="Control_Integral_PNAs"></div>
+              <div class="col-6"><label class="mini fw-bold">Rama</label><input id="ghBranch" class="form-control form-control-sm" placeholder="Control_Integral_PNAs"></div>
+              <div class="col-6"><label class="mini fw-bold">Carpeta</label><input id="ghCarpeta" class="form-control form-control-sm" placeholder="01_KMZ_Entrada"></div>
+              <div class="col-12"><label class="mini fw-bold">Token de acceso (fine-grained · permiso Contents: Read and write)</label>
+                <input id="ghToken" type="password" class="form-control form-control-sm" placeholder="github_pat_…" autocomplete="off"></div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-sm epm-btn-green" type="button" onclick="ghGuardarCfg()">💾 Guardar</button>
+              <a class="btn btn-sm btn-light" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Crear token ↗</a>
+            </div>
+            <p class="mini text-muted mt-2 mb-0">🔒 El token se guarda <b>solo en este navegador</b> (no se comparte). Usa un token de <b>alcance limitado</b> a este repositorio, con <b>Contents: Read and write</b> y vencimiento corto.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -341,6 +366,7 @@ async function init(){
   renderDB(); renderProyectoSelect(); renderPNASelect(); renderLista(); validar();
   aplicarLock();
   initMapa();
+  ghCargarCfg();   // carga la configuración de publicación (token) guardada en este navegador
 }
 
 function normalizeDB(db){
@@ -739,10 +765,11 @@ function renderLista(){
 }
 function validar(){
   const box=document.getElementById('validBox');
-  if(!trazados.length){ box.innerHTML='Aún no hay permisos cargados.'; return; }
+  if(!trazados.length){ box.innerHTML='Aún no hay permisos cargados.'; if(typeof ghActualizarEstado==='function') ghActualizarEstado(); return; }
   const malos=trazados.filter(t=>faltantes(t).length);
   if(malos.length){ box.innerHTML=`<span class="badge badge-bad">${malos.length}</span> permiso(s) con datos incompletos. Puedes exportar igual, pero revísalos.`; }
   else{ box.innerHTML=`<span class="badge badge-ok">OK</span> ${trazados.length} permiso(s) completos. Listo para exportar.`; }
+  if(typeof ghActualizarEstado==='function') ghActualizarEstado();
 }
 
 /* ===========================================================
@@ -767,14 +794,15 @@ function ajustarVista(){ const pts=[]; trazados.forEach(t=>(t.coords||[]).forEac
 /* ===========================================================
    EXPORTAR KMZ
    =========================================================== */
-async function exportarKMZ(){
+/* Arma el KMZ de la sesión y devuelve {blob, nombreArchivo}. Lo usan tanto la descarga como la publicación. */
+async function construirKMZBlob(silencioso){
   podarVacios(); dedupeTrazados();   // nunca exportar permisos repetidos o fantasma
-  if(!trazados.length){ alert('No hay permisos para exportar.'); return; }
+  if(!trazados.length){ if(!silencioso) alert('No hay permisos para exportar.'); return null; }
   const malos=trazados.filter(t=>faltantes(t).length);
-  if(malos.length && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Exportar de todos modos?')) return;
+  if(malos.length && !silencioso && !confirm(malos.length+' permiso(s) tienen datos incompletos. ¿Continuar de todos modos?')) return null;
   // Un KMZ por proyecto: el archivo se nombra con el Código Banco.
   const codigos=[...new Set(trazados.map(t=>t.codigo_banco).filter(Boolean))];
-  if(codigos.length>1 && !confirm('Hay permisos de varios proyectos ('+codigos.join(', ')+') en esta sesión.\nLo recomendable es UN KMZ por proyecto. ¿Exportar todos juntos de todos modos?\n(Si prefieres, usa "Nueva sesión" y trabaja un proyecto a la vez.)')) return;
+  if(codigos.length>1 && !silencioso && !confirm('Hay permisos de varios proyectos ('+codigos.join(', ')+') en esta sesión.\nLo recomendable es UN KMZ por proyecto. ¿Continuar con todos juntos?\n(Si prefieres, usa "Nueva sesión" y trabaja un proyecto a la vez.)')) return null;
   const cb=codigos[0] || 'PNAs';
   const proy=(trazados.find(t=>t.codigo_banco===cb)||{}).proyecto || '';
   const base = proy ? (cb+'_'+proy) : cb;   // nombre = CódigoBanco_Proyecto (más reconocible)
@@ -782,7 +810,82 @@ async function exportarKMZ(){
   const kml=construirKML(nombreArchivo);
   const zip=new JSZip(); zip.file('doc.kml', kml);
   const blob=await zip.generateAsync({type:'blob', mimeType:'application/vnd.google-earth.kmz'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombreArchivo; a.click();
+  return {blob, nombreArchivo};
+}
+async function exportarKMZ(){
+  const r=await construirKMZBlob(false); if(!r) return;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(r.blob); a.download=r.nombreArchivo; a.click();
+}
+
+/* ===========================================================
+   PUBLICAR EN GITHUB (Commit + Push directo desde el navegador)
+   Usa la API de contenidos de GitHub con un token personal del usuario.
+   El token se guarda SOLO en este navegador (localStorage), nunca se envía a otro lado.
+   =========================================================== */
+function ghCfg(){
+  let c={}; try{ c=JSON.parse(localStorage.getItem('pna_gh')||'{}'); }catch(e){}
+  return {
+    owner: c.owner || 'ACGST-EPM',
+    repo:  c.repo  || 'Control_Integral_PNAs',
+    branch:c.branch|| 'Control_Integral_PNAs',
+    carpeta: (c.carpeta!==undefined ? c.carpeta : '01_KMZ_Entrada'),
+    token: c.token || ''
+  };
+}
+function ghCargarCfg(){
+  const c=ghCfg();
+  ['ghOwner','ghRepo','ghBranch','ghCarpeta','ghToken'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; });
+  set('ghOwner',c.owner); set('ghRepo',c.repo); set('ghBranch',c.branch); set('ghCarpeta',c.carpeta); set('ghToken',c.token);
+  ghActualizarEstado();
+}
+function ghGuardarCfg(){
+  const c={ owner:val('ghOwner').trim(), repo:val('ghRepo').trim(), branch:val('ghBranch').trim(),
+            carpeta:val('ghCarpeta').trim().replace(/^\/+|\/+$/g,''), token:val('ghToken').trim() };
+  try{ localStorage.setItem('pna_gh', JSON.stringify(c)); }catch(e){}
+  ghActualizarEstado();
+  const s=document.getElementById('ghMsg'); if(s){ s.className='mini mt-2 text-success'; s.textContent='Configuración guardada en este navegador ✔'; }
+}
+function ghActualizarEstado(){
+  const c=ghCfg(); const btn=document.getElementById('btnPublicar');
+  const listo = !!c.token && !!c.owner && !!c.repo && trazados.length>0;
+  if(btn){ btn.disabled=!listo; btn.title = listo ? 'Commit + Push del KMZ a GitHub' : 'Ingresa el token y ten al menos un permiso cargado'; }
+}
+// Convierte un Blob a base64 (requerido por la API de GitHub)
+function blobABase64(blob){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+}
+async function publicarEnGitHub(){
+  const c=ghCfg();
+  if(!c.token){ alert('Primero ingresa y guarda tu token de GitHub.'); return; }
+  const r=await construirKMZBlob(false); if(!r) return;
+  const ruta = (c.carpeta?c.carpeta+'/':'') + r.nombreArchivo;
+  const apiBase = 'https://api.github.com/repos/'+c.owner+'/'+c.repo+'/contents/'+encodeURIComponent(ruta).replace(/%2F/g,'/');
+  const headers = { 'Authorization':'Bearer '+c.token, 'Accept':'application/vnd.github+json' };
+  const msg=document.getElementById('ghMsg');
+  const setMsg=(cls,txt)=>{ if(msg){ msg.className='mini mt-2 '+cls; msg.innerHTML=txt; } };
+  setMsg('text-secondary','⏳ Publicando '+esc(ruta)+' …');
+  try{
+    // 1) ¿Existe ya el archivo? (para obtener su SHA y reemplazarlo)
+    let sha=null;
+    const g=await fetch(apiBase+'?ref='+encodeURIComponent(c.branch), {headers});
+    if(g.status===200){ const j=await g.json(); sha=j.sha; }
+    else if(g.status===404){ sha=null; }
+    else if(g.status===401){ setMsg('text-danger','❌ Token inválido o sin permisos (401). Revisa el token.'); return; }
+    else if(g.status===403){ setMsg('text-danger','❌ Acceso denegado (403). El token necesita permiso <b>Contents: Read and write</b> sobre este repositorio.'); return; }
+    // 2) PUT del contenido (crea o actualiza) = commit + push
+    const contenido=await blobABase64(r.blob);
+    const body={ message:'KMZ '+r.nombreArchivo+' actualizado desde el Generador', content:contenido, branch:c.branch };
+    if(sha) body.sha=sha;
+    const p=await fetch(apiBase, {method:'PUT', headers, body:JSON.stringify(body)});
+    if(p.status===200 || p.status===201){
+      const j=await p.json();
+      const link=(j.content&&j.content.html_url)||'';
+      setMsg('text-success','✅ Publicado ('+(sha?'actualizado':'creado')+'): <b>'+esc(ruta)+'</b>. El Dashboard lo verá al recargar.'+(link?' <a href="'+link+'" target="_blank" rel="noopener">Ver en GitHub</a>':''));
+    } else {
+      let det=''; try{ det=(await p.json()).message||''; }catch(e){}
+      setMsg('text-danger','❌ No se pudo publicar ('+p.status+'). '+esc(det));
+    }
+  }catch(e){ setMsg('text-danger','❌ Error de red al publicar. Revisa tu conexión. '+esc(String(e.message||e))); }
 }
 function construirKML(nombreDoc){
   let body='';
