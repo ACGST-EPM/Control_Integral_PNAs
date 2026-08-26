@@ -91,12 +91,21 @@
   .av-row .albl{ flex:1; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .av-row .abar{ flex:0 0 84px; }
   .av-row .anum{ flex:0 0 34px; text-align:right; font-weight:700; color:#333; }
+  /* Ícono "?" de ayuda contextual: usa el atributo title (tooltip nativo del navegador) */
+  .help-ico{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; border:1px solid #adb5bd;
+             border-radius:50%; font-size:.62rem; font-weight:bold; color:#6c757d; cursor:help; vertical-align:middle; margin-left:4px; background:#fff; }
+  .help-ico.on-dark{ border-color:rgba(255,255,255,.7); color:#fff; }
+  /* Banner de "modo simulación" (Recorrido temporal activo): visible en toda la pantalla mientras dura */
+  #rtBanner{ border-left:5px solid var(--epm-naranja)!important; background:#fff4e8; color:#7a3e00; font-weight:600; }
+  /* Bloque "Más filtros": separador sutil respecto a los filtros principales */
+  #masFiltros .row{ border-top:1px dashed #d6e1d8; padding-top:8px; margin-top:2px; }
 </style>
 </head>
 <body>
 <div class="epm-header d-flex align-items-center">
   <span style="font-size:24px">🗺️</span>
   <span class="epm-title">PLATAFORMA CONTROL INTEGRAL PNAs</span>
+  <span class="help-ico" tabindex="0" title="PNA = Permiso No Ambiental: autorización que un municipio, INVIAS, la ANI o la Gobernación debe dar antes de intervenir una vía. Aquí se hace seguimiento a todos los que EPM está gestionando en sus proyectos.">?</span>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
     <span class="logo-wrap"><img src="Logo_EPM.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="height:38px" alt="EPM"><span class="badge-aut" style="display:none;background:#2E7D32;font-size:.95rem;padding:4px 12px">epm<small>®</small></span></span>
@@ -115,12 +124,19 @@
     <a href="Generador_KMZ_PNAs.html" target="_blank" class="btn btn-sm epm-btn-green">🗂️ Abrir Generador</a>
   </div>
 
+  <!-- Banner de simulación: solo visible mientras el "Recorrido temporal" está activo -->
+  <div id="rtBanner" class="alert d-none mb-3 d-flex flex-wrap align-items-center gap-2">
+    🕑 <span>Estás viendo una <b>simulación</b>: los datos se calculan como si hoy fuera <b id="rtBannerFecha">—</b>, no reflejan la fecha real de hoy.</span>
+    <button class="btn btn-sm btn-outline-dark ms-auto" onclick="rtReset()">↩ Volver a hoy</button>
+  </div>
+
   <!-- KPIs -->
   <div class="row g-2 mb-3">
     <div class="col-6 col-md-3"><div class="kpi"><div class="t">Permisos</div><div class="n" id="kpiTotal">0</div></div></div>
     <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#008c6b"><div class="t">Activados / Obtenidos</div><div class="n" style="color:#008c6b" id="kpiActivo">0</div></div></div>
     <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#0d6efd"><div class="t">En gestión</div><div class="n" style="color:#0d6efd" id="kpiGestion">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo</div>
+    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo
+      <span class="help-ico" tabindex="0" title="Permisos = cuántos trámites individuales están en riesgo. Proyectos = a cuántos proyectos distintos afecta (un proyecto puede tener varios permisos en riesgo, pero cuenta una sola vez).">?</span></div>
       <div class="kpi-split">
         <div class="c"><div class="n sem-rojo" id="kpiRiesgoP">0</div><div class="sub">Permisos</div></div>
         <div class="sep"></div>
@@ -164,24 +180,40 @@
         <div class="epm-card-header">⚙️ Filtros</div>
         <div class="card-body py-2">
           <div class="row g-2">
-            <div class="col-6"><label class="mini fw-bold">Tipo de permiso (PNA)</label><select id="fPNA" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-6"><label class="mini fw-bold">Autoridad</label><select id="fAut" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-6"><label class="mini fw-bold">Municipio</label><select id="fMun" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Negocio</label><select id="fNeg" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-6"><label class="mini fw-bold">Frente</label><select id="fFrn" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-6"><label class="mini fw-bold">Proyecto</label><select id="fProy" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Estado actual</label><select id="fEst" class="form-select form-select-sm" multiple></select></div>
             <div class="col-6"><label class="mini fw-bold">Riesgo</label><select id="fRie" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-6"><label class="mini fw-bold">Estado de gestión</label><select id="fGes" class="form-select form-select-sm" multiple></select></div>
-            <div class="col-6"><label class="mini fw-bold">Proyecto</label><select id="fProy" class="form-select form-select-sm" multiple></select></div>
+            <div class="col-12">
+              <button class="btn btn-sm btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#masFiltros" aria-expanded="false" aria-controls="masFiltros">
+                ▾ Más filtros (PNA, Autoridad, Municipio, Frente, Estado de gestión)
+                <span id="masFiltrosBadge" class="badge bg-secondary ms-1 d-none">0</span>
+              </button>
+            </div>
+            <div class="col-12 collapse" id="masFiltros">
+              <div class="row g-2">
+                <div class="col-6"><label class="mini fw-bold">Tipo de permiso (PNA)</label><select id="fPNA" class="form-select form-select-sm" multiple></select></div>
+                <div class="col-6"><label class="mini fw-bold">Autoridad</label><select id="fAut" class="form-select form-select-sm" multiple></select></div>
+                <div class="col-6"><label class="mini fw-bold">Municipio</label><select id="fMun" class="form-select form-select-sm" multiple></select></div>
+                <div class="col-6"><label class="mini fw-bold">Frente</label><select id="fFrn" class="form-select form-select-sm" multiple></select></div>
+                <div class="col-6"><label class="mini fw-bold">Estado de gestión</label><select id="fGes" class="form-select form-select-sm" multiple></select></div>
+              </div>
+            </div>
             <div class="col-12"><button id="btnLimpiar" class="btn btn-sm epm-btn w-100">🧹 Limpiar filtros</button></div>
           </div>
         </div>
       </div>
-      <!-- RECORRIDO TEMPORAL (en la zona de Filtros, debajo de Limpiar): mueve la "fecha de análisis" y recalcula semáforos e itinerancia como si HOY fuera esa fecha -->
-      <div class="card mt-3" style="border-color:var(--epm-lima)">
-        <div class="epm-card-header py-1">🕑 Recorrido temporal
-          <span class="mini fw-normal" style="color:#fff">— analiza la gestión en una fecha dada (semáforos e itinerancia se recalculan)</span>
+      <!-- RECORRIDO TEMPORAL: modo simulación, deliberadamente distinto en color (naranja) y colapsado
+           por defecto para que no compita visualmente con los Filtros ni se confunda con ellos. -->
+      <div class="card mt-3" style="border-color:var(--epm-naranja)">
+        <div class="epm-card-header py-1 d-flex justify-content-between align-items-center" style="background:var(--epm-naranja); cursor:pointer"
+             data-bs-toggle="collapse" data-bs-target="#rtBody" aria-expanded="false" aria-controls="rtBody" role="button">
+          <span>🕑 Recorrido temporal <span class="mini fw-normal" style="color:#fff">— modo simulación (no son los datos de hoy)</span>
+            <span class="help-ico on-dark" tabindex="0" onclick="event.stopPropagation()" title="Mueve la 'fecha de análisis' a otro día y recalcula los semáforos e itinerancia como si HOY fuera esa fecha. Útil para ver cómo evolucionará la gestión, pero no cambia los datos reales.">?</span>
+          </span>
+          <span class="mini" style="color:#fff">▾ Abrir</span>
         </div>
+        <div class="collapse" id="rtBody">
         <div class="card-body py-2">
           <div class="row g-2 align-items-end">
             <div class="col-6"><label class="mini fw-bold">Inicio recorrido</label><input type="date" id="rtIni" class="form-control form-control-sm"></div>
@@ -206,6 +238,7 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
     <div class="col-12 col-lg-8 col-mapa">
@@ -226,7 +259,9 @@
                 <tr>
                   <th>Frente</th><th>Proyecto</th><th>Cód. Banco</th><th>PNA</th><th>Autoridad</th><th>Municipio</th>
                   <th>Estado actual</th><th>Avance</th><th>Últ. radicado</th><th>F. límite</th>
-                  <th>Inicio</th><th>Obtención</th><th>Resumen</th>
+                  <th>Inicio<span class="help-ico" tabindex="0" title="¿Se radicó el trámite a tiempo ante la autoridad?">?</span></th>
+                  <th>Obtención<span class="help-ico" tabindex="0" title="¿Se obtendrá (o ya se obtuvo) el permiso antes de la fecha en que el proyecto lo necesita?">?</span></th>
+                  <th>Resumen</th>
                 </tr>
               </thead>
               <tbody id="tbody"></tbody>
@@ -262,6 +297,23 @@
    ============================================================ */
 
 /* ---- Catálogo embebido (respaldo) — incluye valor/unidad del plazo ---- */
+/* Traduce los códigos internos de estado (los mismos del catálogo tipos_permiso.json)
+   a un texto en lenguaje natural para mostrar en pantalla. Lo que no esté en el mapa
+   se muestra igual, solo cambiando "_" por espacios (nunca se rompe con un catálogo nuevo). */
+const ESTADO_LABEL = {
+  "No iniciado":"No iniciado",
+  "Radicado":"Radicado ante la autoridad",
+  "Negado":"Negado",
+  "Aprobado":"Aprobado",
+  "Observado":"Con observaciones de la autoridad",
+  "Revisión_Ajustes":"En ajustes solicitados",
+  "Resolución_Aprobatoria":"Resolución aprobatoria emitida",
+  "Gestión_Pólizas":"Gestionando pólizas",
+  "Gestión_Acta_Inicio":"Gestionando acta de inicio",
+  "Gestión_Suspensión":"En suspensión",
+  "Gestión_Reinicio":"Gestionando reinicio"
+};
+function estLabel(e){ if(!e) return '—'; return ESTADO_LABEL[e] || String(e).replace(/_/g,' '); }
 const AV_SIMPLE = {"No iniciado":0,"Radicado":10,"Negado":100,"Aprobado":100};
 const AV_COMPLETO = {"No iniciado":0,"Radicado":10,"Observado":20,"Revisión_Ajustes":50,"Resolución_Aprobatoria":80,"Gestión_Pólizas":90,"Gestión_Acta_Inicio":100,"Gestión_Suspensión":100,"Gestión_Reinicio":100};
 const CAT_SEED = {
@@ -547,7 +599,7 @@ function popupPermiso(p){
       ${row('Frente', esc(p.frente||'—'))}
       ${row('Municipio', esc(p.municipio||'—'))}
       ${row('Autoridad', esc(p._autoridad||'—'))}
-      ${row('Estado actual', esc(p._estadoActual))}
+      ${row('Estado actual', esc(estLabel(p._estadoActual)))}
       ${row('% Avance', `<span class="pp-bar"><span style="width:${p._avance}%;background:${avCol}"></span></span> ${p._avance}%`)}
     </div>
     <div class="pp-sem ${sem.clase}">${dot(sem.clase)}<b>${semLabel}:</b> ${esc(sem.txt)}</div>
@@ -717,7 +769,7 @@ function renderPorProyecto(lista){
       html += `<div class="py-1" style="border-bottom:1px dashed #f1f3f5">
         <div style="display:flex;justify-content:space-between;gap:6px;align-items:baseline">
           <span class="fw-bold" style="font-size:.82rem" title="${esc(p.frente||'')}">${esc(p.frente||p.nombre)} <span class="mini text-muted">${esc(p.pna||'')}</span></span>
-          <span class="mini text-muted" style="white-space:nowrap">${esc(p._estadoActual)}</span>
+          <span class="mini text-muted" style="white-space:nowrap">${esc(estLabel(p._estadoActual))}</span>
         </div>
         <div style="display:flex;gap:12px;margin-top:2px">
           <span class="mini text-muted">Inicio:</span> ${chip(estadoInicio(p))}
@@ -763,7 +815,7 @@ function fila(p){
   return `<tr data-nombre="${esc(p.nombre)}">
     <td>${esc(p.frente||'—')}</td><td>${esc(p.proyecto||'—')}</td><td>${esc(p.codigo_banco||'—')}</td>
     <td>${esc(p.pna||'—')}</td><td>${badgeAutoridad(p._autoridad,p.municipio)}</td><td>${esc(p.municipio||'—')}</td>
-    <td>${esc(p._estadoActual)}</td>
+    <td>${esc(estLabel(p._estadoActual))}</td>
     <td style="min-width:92px" data-order="${p._avance}">${barra(p._avance,col)}<span class="mini">${p._avance}%</span></td>
     <td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
     ${(()=>{const i=estadoInicio(p),o=estadoObtencion(p);return `<td class="sem ${i.clase}" data-order="${esc(i.txt)}">${dot(i.clase)}${esc(i.txt)}</td>
@@ -774,10 +826,10 @@ function fila(p){
     </div></td>
   </tr>`;
 }
-function llenarFiltro(id, valores){
+function llenarFiltro(id, valores, labelFn){
   const s=$('#'+id); const prev=s.val()||[];
   s.empty();
-  Array.from(new Set(valores.filter(Boolean))).sort().forEach(v=> s.append(new Option(v,v, prev.includes(v), prev.includes(v))));
+  Array.from(new Set(valores.filter(Boolean))).sort().forEach(v=> s.append(new Option(labelFn?labelFn(v):v, v, prev.includes(v), prev.includes(v))));
   s.trigger('change.select2');
 }
 const FILTROS_SEL = '#fPNA,#fAut,#fNeg,#fMun,#fFrn,#fEst,#fRie,#fGes,#fProy';
@@ -787,10 +839,21 @@ function refrescarFiltros(){
   llenarFiltro('fNeg', PERMISOS.map(p=>p.negocio));
   llenarFiltro('fMun', PERMISOS.map(p=>p.municipio));
   llenarFiltro('fFrn', PERMISOS.map(p=>p.frente));
-  llenarFiltro('fEst', PERMISOS.map(p=>p._estadoActual));
+  llenarFiltro('fEst', PERMISOS.map(p=>p._estadoActual), estLabel);
+  actualizarBadgeMasFiltros();
   llenarFiltro('fRie', PERMISOS.map(p=>p._riesgoCat));
   llenarFiltro('fGes', PERMISOS.map(p=>p._gestionCat));
   llenarFiltro('fProy',PERMISOS.map(p=>p.proyecto));
+}
+/* Los filtros "PNA, Autoridad, Municipio, Frente, Estado de gestión" viven colapsados dentro de
+   "Más filtros" (ver #masFiltros); si alguno queda activo se muestra un contador en el botón,
+   para que no queden filtros "escondidos" aplicando sin que el usuario lo note. */
+function actualizarBadgeMasFiltros(){
+  const ids=['fPNA','fAut','fMun','fFrn','fGes'];
+  const n = ids.reduce((s,id)=> s + (($('#'+id).val()||[]).filter(Boolean).length>0 ? 1 : 0), 0);
+  const b=document.getElementById('masFiltrosBadge');
+  if(!b) return;
+  b.textContent=n; b.classList.toggle('d-none', n===0);
 }
 function pasaFiltros(p){
   const g=(id)=> ($('#'+id).val()||[]).filter(Boolean);
@@ -847,7 +910,7 @@ function verHist(nombre){
         <b>Proyecto:</b> ${esc(p.proyecto||'—')} &nbsp;|&nbsp; <b>Frente:</b> ${esc(p.frente||'—')} &nbsp;|&nbsp;
         <b>Municipio:</b> ${esc(p.municipio||'—')} &nbsp;|&nbsp; <b>F. límite:</b> ${fmtDMY(p.fecha_limite_requerida)}
         ${p.concesion?(' &nbsp;|&nbsp; <b>Concesión:</b> '+esc(p.concesion)):''}
-        &nbsp;|&nbsp; <b>Estado actual:</b> ${esc(p._estadoActual)} &nbsp;|&nbsp; <b>Radicaciones:</b> ${p._radicaciones}
+        &nbsp;|&nbsp; <b>Estado actual:</b> ${esc(estLabel(p._estadoActual))} &nbsp;|&nbsp; <b>Radicaciones:</b> ${p._radicaciones}
       </div>
       <div class="mt-2"><span class="sem ${p._semG.clase}">${dot(p._semG.clase)}Gestión: ${p._semG.txt}</span> &nbsp;·&nbsp;
       <span class="sem ${p._semR.clase}">${dot(p._semR.clase)}Riesgo: ${p._semR.txt}</span></div>
@@ -856,7 +919,7 @@ function verHist(nombre){
   const hist=p.historial||[];
   let tl = hist.length ? '<div class="tl">'+hist.map(h=>`
     <div class="tl-item">
-      <div class="tl-estado">${esc(h.estado_tramite||'')} ${h.culminado?'<span class="sem sem-verde" style="font-size:.7rem">✔ culminó</span>':''}</div>
+      <div class="tl-estado">${esc(estLabel(h.estado_tramite))} ${h.culminado?'<span class="sem sem-verde" style="font-size:.7rem">✔ culminó</span>':''}</div>
       <div class="mini">Radicado: ${esc(h.radicado||'—')} · Radicación: ${fmtDMY(h.fecha_radicacion)} · Rad. respuesta: ${esc(h.radicado_respuesta||'—')} · F. respuesta: ${fmtDMY(h.fecha_respuesta)}</div>
       ${h.observacion?('<div style="font-size:.8rem">'+esc(h.observacion)+'</div>'):''}
     </div>`).join('')+'</div>' : '<i class="mini">Sin historial registrado.</i>';
@@ -873,6 +936,11 @@ function aplicarFechaAnalisis(fecha){
   const isoLocal = d=> d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   badge.textContent = FECHA_ANALISIS ? fmtDMY(isoLocal(FECHA_ANALISIS)) : 'hoy';
   badge.className = 'badge ' + (FECHA_ANALISIS ? 'bg-warning text-dark' : 'bg-secondary');
+  const banner=document.getElementById('rtBanner');
+  if(banner){
+    banner.classList.toggle('d-none', !FECHA_ANALISIS);
+    if(FECHA_ANALISIS) document.getElementById('rtBannerFecha').textContent = fmtDMY(isoLocal(FECHA_ANALISIS));
+  }
   refrescarTodo();
 }
 let RT_TIMER=null, RT_FECHAS=[], RT_IDX=0;
@@ -1031,7 +1099,7 @@ function generarInformePDF(){
   const detalle = lista.slice().sort((a,b)=>(a.proyecto||'').localeCompare(b.proyecto||'')).map(p=>{
     const i=estadoInicio(p), o=estadoObtencion(p);
     return '<tr><td>'+esc(p.proyecto||'—')+'</td><td>'+esc(p.frente||'—')+'</td><td>'+esc(p.pna||'—')+'</td><td>'+esc(p._autoridad||'—')
-      +'</td><td>'+esc(p.municipio||'—')+'</td><td>'+esc(p._estadoActual)+'</td><td class="tnum">'+p._avance+'%</td><td>'+fmtDMY(p.fecha_limite_requerida)
+      +'</td><td>'+esc(p.municipio||'—')+'</td><td>'+esc(estLabel(p._estadoActual))+'</td><td class="tnum">'+p._avance+'%</td><td>'+fmtDMY(p.fecha_limite_requerida)
       +'</td><td><span class="chip" style="background:'+semHex(i.clase)+'">'+esc(i.txt)+'</span></td>'
       +'<td><span class="chip" style="background:'+semHex(o.clase)+'">'+esc(o.txt)+'</span></td></tr>';
   }).join('');
@@ -1087,13 +1155,13 @@ function generarPDFPermiso(nombre){
     +'<div><span>Holgura (días):</span> '+esc(p.holgura_dias||'0')+'</div>'
     +'</div></section>';
   b += '<section class="blq"><h2 class="blq-t">Estado y semáforos</h2><div class="kgrid" style="grid-template-columns:repeat(4,1fr)">'
-    +'<div class="kpi"><div class="k">Estado actual</div><div class="v" style="font-size:13px">'+esc(p._estadoActual)+'</div></div>'
+    +'<div class="kpi"><div class="k">Estado actual</div><div class="v" style="font-size:13px">'+esc(estLabel(p._estadoActual))+'</div></div>'
     +'<div class="kpi l"><div class="k">Avance</div><div class="v">'+p._avance+'%</div></div>'
     +'<div class="kpi" style="border-left-color:'+semHex(i.clase)+'"><div class="k">Riesgo de inicio</div><div class="v" style="font-size:13px;color:'+semHex(i.clase)+'">'+esc(i.txt)+'</div></div>'
     +'<div class="kpi" style="border-left-color:'+semHex(o.clase)+'"><div class="k">Riesgo de obtención</div><div class="v" style="font-size:13px;color:'+semHex(o.clase)+'">'+esc(o.txt)+'</div></div>'
     +'</div></section>';
   const hist=p.historial||[];
-  const tl = hist.length ? '<div class="tl2">'+hist.map((h,idx)=>'<div class="it"><div class="est">'+(idx+1)+' · '+esc(h.estado_tramite||'—')+(h.culminado?' ✔':'')+'</div>'
+  const tl = hist.length ? '<div class="tl2">'+hist.map((h,idx)=>'<div class="it"><div class="est">'+(idx+1)+' · '+esc(estLabel(h.estado_tramite))+(h.culminado?' ✔':'')+'</div>'
       +'<div class="mut">Radicado: '+esc(h.radicado||'—')+' · Radicación: '+fmtDMY(h.fecha_radicacion)+' · Rad. respuesta: '+esc(h.radicado_respuesta||'—')+' · F. respuesta: '+fmtDMY(h.fecha_respuesta)+'</div>'
       +(h.observacion?('<div>'+esc(h.observacion)+'</div>'):'')+'</div>').join('')+'</div>'
     : '<p class="mut">Sin historial registrado.</p>';
