@@ -105,7 +105,7 @@
 <div class="epm-header d-flex align-items-center">
   <span style="font-size:24px">🗺️</span>
   <span class="epm-title">PLATAFORMA CONTROL INTEGRAL PNAs</span>
-  <span class="help-ico" tabindex="0" title="PNA = Permiso No Ambiental: autorización que un municipio, INVIAS, la ANI o la Gobernación debe dar antes de intervenir una vía. Aquí se hace seguimiento a todos los que EPM está gestionando en sus proyectos.">?</span>
+  <span class="help-ico" tabindex="0" title="PNA = Permiso No Ambiental: autorización que un municipio, INVIAS, la ANI o la Gobernación debe dar antes de la intervención. Aquí se hace seguimiento a todos los que EPM está gestionando en sus proyectos.">?</span>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="mini">Grupo EPM · Centro de Gestión Servicios Técnicos</span>
     <span class="logo-wrap"><img src="Logo_EPM.png" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'" style="height:38px" alt="EPM"><span class="badge-aut" style="display:none;background:#2E7D32;font-size:.95rem;padding:4px 12px">epm<small>®</small></span></span>
@@ -1047,7 +1047,7 @@ thead th{ background:#eef3ee; color:#4a5a51; text-transform:uppercase; font-size
 function abrirImpresion(titulo, cuerpoHTML){
   const w=window.open('', '_blank');
   if(!w){ alert('Habilita las ventanas emergentes para generar el PDF.'); return; }
-  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><title>'+esc(titulo)+'</title><style>'+CSS_INFORME+'</style></head><body>'
+  const doc='<!doctype html><html lang="es"><head><meta charset="utf-8"><base href="'+esc(document.baseURI)+'"><title>'+esc(titulo)+'</title><style>'+CSS_INFORME+'</style></head><body>'
     +'<div class="hoja">'+cuerpoHTML+'</div>'
     +'<div class="noprint"><button onclick="window.print()">🖨️ Guardar como PDF</button></div>'
     +'<'+'script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script></body></html>';
@@ -1062,7 +1062,9 @@ function filtrosActivos(){
 function repHead(subtitulo){
   const fecha=new Date().toLocaleString('es-CO',{dateStyle:'long',timeStyle:'short'});
   const analisis = (FECHA_ANALISIS!==null) ? ('<div><b>Fecha de análisis:</b> '+fmtDMY(FECHA_ANALISIS.getFullYear()+'-'+String(FECHA_ANALISIS.getMonth()+1).padStart(2,'0')+'-'+String(FECHA_ANALISIS.getDate()).padStart(2,'0'))+'</div>') : '';
-  return '<div class="rep-head"><div><div class="brand">Grupo EPM<small>Centro de Gestión Servicios Técnicos</small></div></div>'
+  return '<div class="rep-head"><div style="display:flex;align-items:center;gap:10px">'
+    +'<img src="Logo_EPM.png" alt="EPM" style="height:32px" onerror="this.remove()">'
+    +'<div class="brand">Grupo EPM<small>Centro de Gestión Servicios Técnicos</small></div></div>'
     +'<div class="meta"><div><b>Emitido:</b> '+esc(fecha)+'</div>'+analisis+'<div>Control Integral PNAs</div></div></div>'
     +'<h1 class="rep-title">'+esc(subtitulo)+'</h1>';
 }
