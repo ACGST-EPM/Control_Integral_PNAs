@@ -555,7 +555,10 @@ function recargarRepo(){
 /* ================= MAPA ================= */
 function initMapa(){
   map=L.map('map').setView([6.24,-75.57],10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  /* Mapa base claro/neutro (CartoDB Positron) en vez de OpenStreetMap estándar:
+     tiene mucho menos color propio (agua, zonas verdes), para que los colores
+     de los permisos y la itinerancia siempre resalten sobre el fondo. */
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap contributors © CARTO'}).addTo(map);
   capa=L.layerGroup().addTo(map);
   // Al alejar/acercar el zoom, redibuja SOLO reescalando la geometría (sin reencuadrar).
   map.on('zoomend', ()=>{ if(LISTA_MAPA) dibujarMapa(LISTA_MAPA, false); });
