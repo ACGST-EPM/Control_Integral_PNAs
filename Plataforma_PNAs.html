@@ -555,14 +555,35 @@ function recargarRepo(){
 
 /* ================= MAPA ================= */
 function initMapa(){
-  map=L.map('map').setView([6.24,-75.57],10);
+  // renderer con padding amplio: Leaflet solo pinta los trazados que caen dentro del
+  // área visible más este margen. Con el valor por defecto (0.1) las geometrías cercanas
+  // al borde desaparecían al hacer zoom o desplazar el mapa hasta el siguiente redibujado.
+  map=L.map('map',{renderer:L.svg({padding:0.7})}).setView([6.24,-75.57],10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   capa=L.layerGroup().addTo(map);
   // Al alejar/acercar el zoom, redibuja SOLO reescalando la geometría (sin reencuadrar).
   map.on('zoomend', ()=>{ if(LISTA_MAPA) dibujarMapa(LISTA_MAPA, false); });
-  // El mapa ocupa la altura flexible de su columna: recalcular tamaño tras el layout y al redimensionar.
-  setTimeout(()=>map.invalidateSize(), 200);
+  // Cuando Leaflet ya asumió el nuevo tamaño, repinta los trazados para que ocupen
+  // toda el área disponible (y se reescalen con el factor de zoom que corresponda).
+  map.on('resize', ()=>{ if(LISTA_MAPA) dibujarMapa(LISTA_MAPA, false); });
+  // El mapa ocupa la altura flexible de su columna, que cambia al desplegar "Más filtros"
+  // o el "Recorrido temporal". Si no se le avisa, Leaflet sigue creyendo que mide lo de
+  // antes y deja de pintar la franja nueva: los trazados que caen ahí se pierden.
+  // El observador detecta cualquier cambio de tamaño del contenedor, venga de donde venga.
+  ajustarMapaAlContenedor();
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 200);   // primer pintado
   window.addEventListener('resize', ()=>{ if(map) map.invalidateSize(); });
+}
+/* Mantiene sincronizado el tamaño real del contenedor con el que Leaflet cree que tiene. */
+function ajustarMapaAlContenedor(){
+  const cont=document.getElementById('map'); if(!cont) return;
+  let t=null;
+  const sincronizar=()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 60); };
+  if(window.ResizeObserver){ new ResizeObserver(sincronizar).observe(cont); }
+  // Respaldo para navegadores sin ResizeObserver: los paneles plegables de Bootstrap
+  // avisan cuando terminan de abrirse o cerrarse.
+  else{ document.addEventListener('shown.bs.collapse', sincronizar);
+        document.addEventListener('hidden.bs.collapse', sincronizar); }
 }
 const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935'};
 const ITIN_TXT = {verde:'Itinerancia lenta', amarillo:'Itinerancia media', rojo:'Itinerancia rápida'};
@@ -609,6 +630,11 @@ function popupPermiso(p){
 function dibujarMapa(lista, reencuadrar){
   LISTA_MAPA = lista;
   if(reencuadrar===undefined) reencuadrar=true;
+  // Permiso cuya ficha (popup) esté abierta ahora mismo — se consulta ANTES de limpiar
+  // la capa, para poder reabrirla al final del redibujado.
+  let permisoConPopup = null;
+  try{ capa.eachLayer(l=>{ if(l.__permiso && l.isPopupOpen && l.isPopupOpen()) permisoConPopup = l.__permiso; }); }catch(e){}
+
   capa.clearLayers(); const pts=[];
   const f=factorZoom();
   const enRecorrido = (FECHA_ANALISIS!==null);   // recorrido temporal activo
@@ -668,10 +694,19 @@ function dibujarMapa(lista, reencuadrar){
     else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:wPolig,fillOpacity:.30});
     else lyr=L.polyline(p.coords,{color:col,weight:wLinea});
     lyr.bindPopup(popupPermiso(p));
+    lyr.__permiso = p.nombre;
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
   });
+  // Si el usuario tenía abierta la ficha de un permiso, se vuelve a abrir: redibujar
+  // (por zoom o por un cambio de tamaño del panel) no debe cerrarle lo que estaba leyendo.
+  if(permisoConPopup){
+    capa.eachLayer(l=>{ if(l.__permiso===permisoConPopup && l.openPopup) l.openPopup(); });
+  }
   if(reencuadrar){ try{ map.invalidateSize(); }catch(e){} }
-  if(reencuadrar && pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2)); }catch(e){} }
+  // Reencuadre sobre los permisos visibles. maxZoom evita que, al filtrar hasta dejar
+  // un solo permiso (o varios en el mismo sitio), el mapa salte al zoom máximo y se
+  // pierda toda referencia del entorno; el padding deja aire para el borde y el halo.
+  if(reencuadrar && pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2),{maxZoom:16,padding:[24,24]}); }catch(e){} }
 }
 function leyenda(){
   const box=document.getElementById('leyenda');
