@@ -612,31 +612,57 @@ function dibujarMapa(lista, reencuadrar){
   capa.clearLayers(); const pts=[];
   const f=factorZoom();
   const enRecorrido = (FECHA_ANALISIS!==null);   // recorrido temporal activo
-  lista.forEach(p=>{
-    if(!p.coords||!p.coords.length) return;
+  // Grosores/tamaños escalados por zoom (crecen al alejar; con tope para no saturar).
+  // Los del halo de itinerancia se conservan tal cual: la itinerancia debe seguir
+  // llamando la atención igual que antes, sobre todo al alejar el zoom.
+  const wLinea   = Math.min(14, 5*f);
+  const wPolig   = Math.min(10, 2.5*f);
+  const rPunto   = Math.min(16, 6*f);
+  const wHaloLn  = Math.min(20, 9*f);
+  const wHaloPg  = Math.min(14, 5*f);
+  const rHaloPt  = Math.min(22, 13*f);
+  // Grosor del borde de contraste (casing) que separa cada geometría del mapa base.
+  const bLinea = wLinea+4, bPolig = wPolig+3, bPunto = rPunto+2;
+
+  const visibles = lista.filter(p=>{
+    if(!p.coords||!p.coords.length) return false;
     // Recorrido temporal: ocultar del mapa los permisos que aún NO han iniciado
     // gestión a la fecha de análisis (sin radicar / sin ninguna gestión en el período).
-    if(enRecorrido && !haIniciadoGestion(p, hoy())) return;
+    if(enRecorrido && !haIniciadoGestion(p, hoy())) return false;
+    return true;
+  });
+
+  // El dibujo va en TRES pasadas completas, no permiso por permiso. Así ningún
+  // elemento de un permiso puede tapar la geometría de otro, y cada capa queda
+  // en su plano: borde blanco (abajo) › halo de itinerancia › geometría (arriba).
+
+  // PASADA 1 — Borde de contraste blanco (casing) de TODOS los permisos.
+  // Separa la geometría del mapa base (agua, zonas verdes, vías) sea cual sea
+  // el color que quede debajo. Va al fondo para no comerse el halo.
+  visibles.forEach(p=>{
+    let casing;
+    if(p.geomType==='Point') casing=L.circleMarker(p.coords[0],{radius:bPunto,color:'#fff',weight:2,fill:false,opacity:.95});
+    else if(p.geomType==='Polygon') casing=L.polygon(p.coords,{color:'#fff',weight:bPolig,fill:false,opacity:.95});
+    else casing=L.polyline(p.coords,{color:'#fff',weight:bLinea,opacity:.95});
+    capa.addLayer(casing);
+  });
+
+  // PASADA 2 — Contornos TITILANTES (itinerancia) de TODOS los permisos.
+  // Mismo color, grosor y velocidad de siempre: la itinerancia se ve igual que antes.
+  visibles.forEach(p=>{
+    if(!(p._itinerancia && p._itinerancia.activa)) return;
+    const colH = ITIN_COL[p._itinerancia.nivel];
+    const cls  = 'pulse-'+p._itinerancia.nivel;
+    let halo;
+    if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:3,fill:false,className:cls});
+    else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls});
+    else halo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls});
+    capa.addLayer(halo);
+  });
+
+  // PASADA 3 — Geometría de cada permiso, con el color de su tipo de permiso.
+  visibles.forEach(p=>{
     const col=p._color;
-    const itAct = !!(p._itinerancia && p._itinerancia.activa);
-    const colH = itAct ? ITIN_COL[p._itinerancia.nivel] : null;
-    const cls  = itAct ? 'pulse-'+p._itinerancia.nivel : '';
-    // Grosores/tamaños escalados por zoom (crecen al alejar; con tope para no saturar).
-    const wLinea   = Math.min(14, 5*f);
-    const wPolig   = Math.min(10, 2.5*f);
-    const rPunto   = Math.min(16, 6*f);
-    const wHaloLn  = Math.min(20, 9*f);
-    const wHaloPg  = Math.min(14, 5*f);
-    const rHaloPt  = Math.min(22, 13*f);
-    // 1) Contorno TITILANTE (itinerancia) SOBRE la propia geometría — se dibuja primero (debajo).
-    if(itAct){
-      let halo;
-      if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:3,fill:false,className:cls});
-      else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls});
-      else halo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls});
-      capa.addLayer(halo);
-    }
-    // 2) Geometría de cada permiso (punto / línea / polígono) con el color del tipo de permiso.
     let lyr;
     if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:rPunto,color:col,fillColor:col,fillOpacity:.9});
     else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:wPolig,fillOpacity:.30});
