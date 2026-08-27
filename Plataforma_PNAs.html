@@ -1517,7 +1517,7 @@ function generarInformePDF(){
   /* ---------- 5 (apéndice) · DETALLE AMPLIADO de los permisos marcados en la tabla ---------- */
   const ampliados = lista.filter(p=> AMPLIAR_INFORME.has(p.nombre));
   if(ampliados.length){
-    b += '<section class="blq" style="page-break-before:always"><h2 class="blq-t">Detalle ampliado ('+ampliados.length+' permiso'+(ampliados.length>1?'s':'')+')</h2>'
+    b += '<section class="blq"><h2 class="blq-t">Detalle ampliado ('+ampliados.length+' permiso'+(ampliados.length>1?'s':'')+')</h2>'
        + '<div class="mut" style="font-size:9.6px;margin:-4px 0 6px">Histórico completo de los permisos marcados en la tabla del dashboard.</div>';
     ampliados.forEach(p=>{
       b += '<div class="ficha"><div class="ftit">'+esc(p.pna||'')+' · '+esc(p.frente||p.nombre)+'</div>'+fichaPermisoHTML(p)+'</div>';
