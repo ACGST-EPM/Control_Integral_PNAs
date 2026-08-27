@@ -774,9 +774,10 @@ function dibujarMapa(lista, reencuadrar){
   });
 
   // PASADA 4 — Etiqueta con el tipo de permiso. Como el color ya no identifica el
-  // tipo, éste se lee. Solo a partir de zoom 13: en la vista panorámica la pregunta
-  // es "¿dónde hay problemas?", y el texto encimado solo estorbaría.
-  if(map.getZoom()>=13){
+  // tipo, éste se lee. Solo a partir de zoom 15 (acercamiento de detalle a los
+  // trazados): a nivel municipal las etiquetas se traslapaban entre sí; se dejan
+  // para cuando el usuario se acerca lo suficiente para leerlas sin encimarse.
+  if(map.getZoom()>=15){
     visibles.forEach(p=>{
       const t = (p.pna||'').trim(); if(!t) return;
       capa.addLayer(L.marker(centroDe(p.coords), {interactive:false, keyboard:false,
@@ -1351,7 +1352,7 @@ function generarInformePDF(){
   const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
   const porProyecto = Object.keys(grupos).sort().map(proy=>{
     const g=grupos[proy]; const o=g.filter(p=>p._listo).length; const r=g.filter(p=>critico(p).clase==='sem-rojo').length;
-    return '<tr><td>'+esc(proy)+'</td><td class="mut">'+esc(g[0].negocio||'—')+'</td><td class="tnum">'+g.length+'</td><td class="tnum">'+o+'</td><td class="tnum">'+r+'</td></tr>';
+    return '<tr><td>'+esc(proy)+'</td><td class="mut">'+esc(nombreNegocio(g[0].negocio))+'</td><td class="tnum">'+g.length+'</td><td class="tnum">'+o+'</td><td class="tnum">'+r+'</td></tr>';
   }).join('');
 
   // Detalle de permisos
@@ -1377,7 +1378,7 @@ function generarInformePDF(){
 
   b += '<section class="blq"><h2 class="blq-t">Distribución</h2>'
     + '<div class="dist">'
-      + tblDist('Por Negocio', conteoFijo(lista,'negocio',NEGOCIOS_CAT()), lista.length)
+      + tblDist('Por Negocio', conteoFijo(lista,'negocio',NEGOCIOS_CAT()).map(p=>[nombreNegocio(p[0]),p[1]]), lista.length)
       + tblDist('Por Autoridad', conteoFijo(lista,'_autoridad',AUTORIDADES_CAT()), lista.length)
     + '</div>'
     + '<div class="dist" style="margin-top:14px">'
@@ -1406,7 +1407,7 @@ function generarPDFPermiso(nombre){
   b += '<section class="blq"><h2 class="blq-t">Identificación</h2><div class="idcard">'
     +'<div><span>Proyecto:</span> <b>'+esc(p.proyecto||'—')+'</b></div>'
     +'<div><span>Código Banco:</span> <b>'+esc(p.codigo_banco||'—')+'</b></div>'
-    +'<div><span>Negocio:</span> '+esc(p.negocio||'—')+'</div>'
+    +'<div><span>Negocio:</span> '+esc(nombreNegocio(p.negocio))+'</div>'
     +'<div><span>Frente:</span> '+esc(p.frente||'—')+'</div>'
     +'<div><span>Autoridad:</span> '+esc(p._autoridad||'—')+'</div>'
     +'<div><span>Municipio:</span> '+esc(p.municipio||'—')+'</div>'
