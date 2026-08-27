@@ -18,16 +18,24 @@
   body{ background:#f3f8f4; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
   .epm-header{ background:#fff; border-bottom:4px solid var(--epm-verde); box-shadow:0 2px 8px rgba(0,0,0,.1); padding:8px 20px; }
   .epm-title{ color:var(--epm-verde); font-weight:bold; font-size:19px; margin-left:12px; vertical-align:middle; }
-  .epm-card-header{ background:var(--epm-verde); color:#fff; font-weight:bold; padding:8px 14px; font-size:.95rem;}
-  .epm-btn{ background:var(--epm-lima); color:#000; font-weight:bold; border:none; }
-  .epm-btn:hover{ background:#99a800; }
-  .epm-btn-green{ background:var(--epm-verde); color:#fff; font-weight:bold; border:none;}
+  /* Encabezado de tarjeta: franja clara con texto verde y filete inferior, en vez de
+     un bloque verde sólido. Se distingue sin competir en saturación con los datos. */
+  .epm-card-header{ background:#f4f8f4; color:#0b6b34; font-weight:bold; padding:8px 14px; font-size:.95rem; border-bottom:2px solid var(--epm-verde); }
+  /* Botones — dos niveles: primario (una acción, verde sólido) y secundario (contorno).
+     El lima saturado se retira: el color fuerte queda para los datos, no para el cromo. */
+  .epm-btn{ background:#fff; color:#0b6b34; font-weight:bold; border:1.5px solid #cfe0d2; }
+  .epm-btn:hover{ background:#f0f6f1; border-color:var(--epm-verde); color:#0b6b34; }
+  .epm-btn-green{ background:var(--epm-verde); color:#fff; font-weight:bold; border:1.5px solid var(--epm-verde);}
+  .epm-btn-green:hover{ background:#007a00; color:#fff; }
   #map{ flex:1 1 auto; height:auto; min-height:360px; border:3px solid var(--epm-verde); border-radius:8px; }
   .col-mapa{ display:flex; flex-direction:column; }
   .mini{ font-size:.72rem; color:#6c757d;}
-  .kpi{ background:#fff; border-left:4px solid var(--epm-verde); border-radius:6px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.06);}
-  .kpi .n{ font-size:1.5rem; font-weight:bold; }
+  /* KPI: marco tranquilo (sin filete de color a la izquierda). El estado lo marca un
+     punto del semáforo junto al rótulo, coherente con el color del mapa. */
+  .kpi{ background:#fff; border:1px solid #e6ede7; border-radius:8px; padding:8px 12px; box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .kpi .n{ font-size:1.5rem; font-weight:bold; color:#16231c; }
   .kpi .t{ font-size:.72rem; color:#6c757d; text-transform:uppercase; font-weight:bold;}
+  .kpi .t .kdot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:middle; }
   table td, table th{ font-size:.8rem; vertical-align:middle;}
   .sem{ font-weight:bold; white-space:nowrap; }
   .sem-verde{ color:#009300;} .sem-amarillo{ color:#c78a00;} .sem-rojo{ color:#dc3545;} .sem-gris{ color:#6c757d;} .sem-alerta{ color:#d56b00;}
@@ -132,10 +140,10 @@
     <div class="flex-grow-1">
       <b>Fuente de datos:</b> <span id="fuente">buscando KMZ en el repositorio…</span>
     </div>
-    <button class="btn btn-sm epm-btn-green mb-0" onclick="recargarRepo()">🔄 Recargar del repositorio</button>
+    <button class="btn btn-sm epm-btn mb-0" onclick="recargarRepo()">🔄 Recargar del repositorio</button>
     <label class="btn btn-sm epm-btn mb-0">📂 Cargar KMZ (uno o varios)
       <input type="file" accept=".kmz,.kml" multiple onchange="cargarArchivos(this.files)" hidden></label>
-    <button class="btn btn-sm mb-0 fw-bold" style="background:#b3172d;color:#fff" onclick="generarInformePDF()">📄 Generar informe PDF</button>
+    <button class="btn btn-sm epm-btn mb-0" onclick="generarInformePDF()">📄 Generar informe PDF</button>
     <a href="Generador_KMZ_PNAs.html" target="_blank" class="btn btn-sm epm-btn-green">🗂️ Abrir Generador</a>
   </div>
 
@@ -148,9 +156,9 @@
   <!-- KPIs -->
   <div class="row g-2 mb-3">
     <div class="col-6 col-md-3"><div class="kpi"><div class="t">Permisos</div><div class="n" id="kpiTotal">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#008c6b"><div class="t">Activados / Obtenidos</div><div class="n" style="color:#008c6b" id="kpiActivo">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#0d6efd"><div class="t">En gestión</div><div class="n" style="color:#0d6efd" id="kpiGestion">0</div></div></div>
-    <div class="col-6 col-md-3"><div class="kpi" style="border-left-color:#dc3545"><div class="t">En riesgo
+    <div class="col-6 col-md-3"><div class="kpi"><div class="t"><span class="kdot" style="background:#0ca30c"></span>Activados / Obtenidos</div><div class="n" id="kpiActivo">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi"><div class="t"><span class="kdot" style="background:#5b6f7e"></span>En gestión</div><div class="n" id="kpiGestion">0</div></div></div>
+    <div class="col-6 col-md-3"><div class="kpi"><div class="t"><span class="kdot" style="background:#d03b3b"></span>En riesgo
       <span class="help-ico" tabindex="0" title="Permisos = cuántos trámites individuales están en riesgo. Proyectos = a cuántos proyectos distintos afecta (un proyecto puede tener varios permisos en riesgo, pero cuenta una sola vez).">?</span></div>
       <div class="kpi-split">
         <div class="c"><div class="n sem-rojo" id="kpiRiesgoP">0</div><div class="sub">Permisos</div></div>
@@ -221,12 +229,12 @@
       <!-- RECORRIDO TEMPORAL: modo simulación, deliberadamente distinto en color (naranja) y colapsado
            por defecto para que no compita visualmente con los Filtros ni se confunda con ellos. -->
       <div class="card mt-3" style="border-color:var(--epm-naranja)">
-        <div class="epm-card-header py-1 d-flex justify-content-between align-items-center" style="background:var(--epm-naranja); cursor:pointer"
+        <div class="epm-card-header py-1 d-flex justify-content-between align-items-center" style="background:#fff; color:var(--epm-naranja); border-bottom:2px solid var(--epm-naranja); cursor:pointer"
              data-bs-toggle="collapse" data-bs-target="#rtBody" aria-expanded="false" aria-controls="rtBody" role="button">
-          <span>🕑 Recorrido temporal <span class="mini fw-normal" style="color:#fff">— modo simulación (no son los datos de hoy)</span>
-            <span class="help-ico on-dark" tabindex="0" onclick="event.stopPropagation()" title="Mueve la 'fecha de análisis' a otro día y recalcula los semáforos e itinerancia como si HOY fuera esa fecha. Útil para ver cómo evolucionará la gestión, pero no cambia los datos reales.">?</span>
+          <span>🕑 Recorrido temporal <span class="mini fw-normal" style="color:var(--epm-naranja)">— modo simulación (no son los datos de hoy)</span>
+            <span class="help-ico" tabindex="0" onclick="event.stopPropagation()" style="border-color:var(--epm-naranja);color:var(--epm-naranja)" title="Mueve la 'fecha de análisis' a otro día y recalcula los semáforos e itinerancia como si HOY fuera esa fecha. Útil para ver cómo evolucionará la gestión, pero no cambia los datos reales.">?</span>
           </span>
-          <span class="mini" style="color:#fff">▾ Abrir</span>
+          <span class="mini" style="color:var(--epm-naranja)">▾ Abrir</span>
         </div>
         <div class="collapse" id="rtBody">
         <div class="card-body py-2">
@@ -277,7 +285,7 @@
   <div class="row g-3">
     <div class="col-12">
       <div class="card" style="border-top:4px solid var(--epm-lima)">
-        <div class="epm-card-header">📋 Información_Trámites_PNA</div>
+        <div class="epm-card-header">📋 Información de trámites (PNAs)</div>
         <div class="card-body">
           <div class="table-responsive">
             <table id="tabla" class="table table-sm table-striped table-hover" style="width:100%">
