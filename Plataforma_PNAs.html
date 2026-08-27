@@ -1082,9 +1082,11 @@ function fila(p){
     <td>${esc(p._ultRadicado||'—')}</td><td>${fmtDMY(p.fecha_limite_requerida)}</td>
     ${(()=>{const i=estadoInicio(p),o=estadoObtencion(p);return `<td class="sem ${i.clase}" data-order="${esc(i.txt)}">${dot(i.clase)}${esc(i.txt)}</td>
     <td class="sem ${o.clase}" data-order="${esc(o.txt)}">${dot(o.clase)}${esc(o.txt)}</td>`;})()}
-    <td><div class="d-flex gap-1">
+    <td><div class="d-flex gap-1 align-items-center">
       <button class="btn btn-sm epm-btn py-0" title="Ver historial" onclick="verHist('${esc(p.nombre).replace(/'/g,"\\'")}')">🗓️</button>
       <button class="btn btn-sm py-0" style="background:#5b6f7e;color:#fff;border:none" title="Generar PDF de este permiso" onclick="generarPDFPermiso('${esc(p.nombre).replace(/'/g,"\\'")}')">📄</button>
+      <label class="mini d-inline-flex align-items-center gap-1 mb-0 ms-1" title="Incluir el detalle ampliado (histórico completo) de este permiso en el informe PDF general">
+        <input type="checkbox" ${AMPLIAR_INFORME.has(p.nombre)?'checked':''} onchange="toggleAmpliar('${esc(p.nombre).replace(/'/g,"\\'")}', this.checked)"> Ampliar</label>
     </div></td>
   </tr>`;
 }
@@ -1309,6 +1311,42 @@ thead th{ background:#eef3ee; color:#4a5a51; text-transform:uppercase; font-size
 .tl2 .est{ font-weight:700; color:#14231c; }
 .idcard{ display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; font-size:11px; }
 .idcard div span{ color:#71827a; }
+/* KPI con punto de estado (misma convención que el dashboard) */
+.kpi .k .kd{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+/* Reflujo en columnas: los bloques largos llenan el ancho y no dejan huecos al imprimir */
+.reflow{ column-count:2; column-gap:20px; }
+.reflow > div{ break-inside:avoid; -webkit-column-break-inside:avoid; }
+/* Avance del trámite (informe) */
+.av-neg{ display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:#0b6b34; background:#eef6ef; border-radius:5px; padding:3px 8px; margin:8px 0 3px; }
+.av-neg svg{ flex:0 0 auto; }
+.av-proy{ font-size:10px; font-weight:700; color:#495057; margin:4px 0 2px 4px; }
+.av-row{ display:flex; align-items:center; gap:6px; font-size:9.6px; margin:0 0 2px 10px; }
+.av-row .albl{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#495057; }
+.av-row .abar{ flex:0 0 70px; background:#e9ecef; border-radius:4px; height:7px; overflow:hidden; }
+.av-row .abar > span{ display:block; height:100%; border-radius:4px; background:#0b6b34; }
+.av-row .anum{ flex:0 0 30px; text-align:right; font-weight:700; color:#333; }
+/* Permisos por proyecto (informe) */
+.pp-proy{ font-size:10.5px; font-weight:700; color:#0b6b34; border-bottom:1px solid #e2e9e3; padding-bottom:2px; margin:8px 0 3px; }
+.pp-item{ font-size:9.6px; margin:0 0 4px 2px; }
+.pp-item .ph{ font-weight:700; color:#14231c; }
+.pp-item .pl{ color:#71827a; }
+/* Distribución con ícono/logo, sin porcentajes */
+.distg{ display:grid; grid-template-columns:1fr 1fr; gap:14px 22px; }
+.dtab td{ border-bottom:1px solid #eef2ee; padding:4px 6px; }
+.dcat{ display:flex; align-items:center; gap:7px; }
+.dcat .dic{ flex:0 0 22px; height:18px; display:flex; align-items:center; justify-content:center; }
+.dcat .dic img{ max-width:22px; max-height:16px; object-fit:contain; }
+/* Resumen por proyecto (jerárquico) */
+.jer th, .jer td{ border:1px solid #e2e9e3; padding:5px 7px; vertical-align:middle; }
+.jer .neg{ background:#f4f8f4; font-weight:700; color:#0b6b34; }
+.jer .neg .cell{ display:flex; align-items:center; gap:6px; }
+.jer .proy{ font-weight:600; color:#14231c; }
+.jer .pna{ font-weight:600; }
+.jer td.n{ text-align:center; font-variant-numeric:tabular-nums; }
+.jer td.rie{ font-weight:700; }
+/* Ficha ampliada (apéndice) */
+.ficha{ margin-top:16px; padding-top:12px; border-top:2px solid #d6e1d8; page-break-inside:avoid; }
+.ficha .ftit{ font-size:12px; font-weight:800; color:#0b6b34; margin:0 0 6px; }
 `;
 function abrirImpresion(titulo, cuerpoHTML){
   const w=window.open('', '_blank');
@@ -1334,109 +1372,208 @@ function repHead(subtitulo){
     +'<div class="meta"><div><b>Emitido:</b> '+esc(fecha)+'</div>'+analisis+'<div>Control Integral PNAs</div></div></div>'
     +'<h1 class="rep-title">'+esc(subtitulo)+'</h1>';
 }
-function tblDist(titulo, pairs, total){
-  const filas = pairs.length ? pairs.map(p=>{ const pct=total?Math.round(p[1]/total*100):0;
-    return '<tr><td>'+esc(p[0])+'</td><td class="tnum">'+p[1]+'</td><td class="tnum">'+pct+'%</td></tr>'; }).join('')
-    : '<tr><td colspan="3" class="mut">Sin datos.</td></tr>';
-  return '<div><h2 class="blq-t">'+esc(titulo)+'</h2><table><thead><tr><th>Categoría</th><th class="tnum">Permisos</th><th class="tnum">%</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+/* Tabla de distribución SIN porcentajes. iconFn(clave)->HTML opcional (ícono/logo). */
+function tblDist(titulo, pairs, iconFn){
+  const filas = pairs.length ? pairs.map(p=>{
+    const ico = iconFn ? iconFn(p[0]) : '';
+    const cat = ico ? '<div class="dcat"><span class="dic">'+ico+'</span><span>'+esc(p[0])+'</span></div>' : esc(p[0]);
+    return '<tr><td>'+cat+'</td><td class="tnum">'+p[1]+'</td></tr>';
+  }).join('') : '<tr><td colspan="2" class="mut">Sin datos.</td></tr>';
+  return '<div><h2 class="blq-t">'+esc(titulo)+'</h2><table class="dtab"><thead><tr><th>Categoría</th><th class="tnum">Permisos</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
 }
 function conteoFn(lista, fn){ const m={}; lista.forEach(p=>{ const k=fn(p).txt||'—'; m[k]=(m[k]||0)+1; }); return Object.keys(m).map(k=>[k,m[k]]).sort((a,b)=>b[1]-a[1]); }
+/* Conteos de un grupo de permisos, con las mismas definiciones que los KPIs del dashboard. */
+function _cuentaGrupo(g){
+  const critico = p => (p._radicaciones>0 ? estadoObtencion(p) : estadoInicio(p));
+  return { total:g.length,
+    obt:g.filter(p=>p._listo).length,
+    ges:g.filter(p=>p._avance>0 && p._avance<100).length,
+    rie:g.filter(p=>critico(p).clase==='sem-rojo').length };
+}
+/* Ficha ampliada de un permiso (identificación + semáforos + historial), reutilizada
+   por el PDF individual y por el apéndice del informe general. */
+function fichaPermisoHTML(p){
+  const i=estadoInicio(p), o=estadoObtencion(p);
+  let b = '<div class="idcard">'
+    +'<div><span>Proyecto:</span> <b>'+esc(p.proyecto||'—')+'</b></div>'
+    +'<div><span>Código Banco:</span> <b>'+esc(p.codigo_banco||'—')+'</b></div>'
+    +'<div><span>Negocio:</span> '+esc(nombreNegocio(p.negocio))+'</div>'
+    +'<div><span>Frente:</span> '+esc(p.frente||'—')+'</div>'
+    +'<div><span>Autoridad:</span> '+esc(nombreAutoridad(p._autoridad))+'</div>'
+    +'<div><span>Municipio:</span> '+esc(p.municipio||'—')+'</div>'
+    +'<div><span>Fecha límite requerida:</span> <b>'+fmtDMY(p.fecha_limite_requerida)+'</b></div>'
+    +'<div><span>Holgura (días):</span> '+esc(p.holgura_dias||'0')+'</div>'
+    +'</div>';
+  b += '<div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-top:10px">'
+    +'<div class="kpi"><div class="k">Estado actual</div><div class="v" style="font-size:12px">'+esc(estLabel(p._estadoActual))+'</div></div>'
+    +'<div class="kpi"><div class="k">Avance</div><div class="v">'+p._avance+'%</div></div>'
+    +'<div class="kpi" style="border-left-color:'+semHex(i.clase)+'"><div class="k">Riesgo de inicio</div><div class="v" style="font-size:12px;color:'+semHex(i.clase)+'">'+esc(i.txt)+'</div></div>'
+    +'<div class="kpi" style="border-left-color:'+semHex(o.clase)+'"><div class="k">Riesgo de obtención</div><div class="v" style="font-size:12px;color:'+semHex(o.clase)+'">'+esc(o.txt)+'</div></div>'
+    +'</div>';
+  const hist=p.historial||[];
+  b += hist.length ? '<div class="tl2" style="margin-top:10px">'+hist.map((h,idx)=>'<div class="it"><div class="est">'+(idx+1)+' · '+esc(estLabel(h.estado_tramite))+(h.culminado?' ✔':'')+'</div>'
+      +'<div class="mut">Radicado: '+esc(h.radicado||'—')+' · Radicación: '+fmtDMY(h.fecha_radicacion)+' · Rad. respuesta: '+esc(h.radicado_respuesta||'—')+' · F. respuesta: '+fmtDMY(h.fecha_respuesta)+'</div>'
+      +(h.observacion?('<div>'+esc(h.observacion)+'</div>'):'')+'</div>').join('')+'</div>'
+    : '<p class="mut" style="margin-top:8px">Sin historial registrado.</p>';
+  return b;
+}
 function generarInformePDF(){
   const lista = PERMISOS.filter(pasaFiltros);
   if(!lista.length){ alert('No hay permisos que cumplan los filtros para incluir en el informe.'); return; }
   const critico = p => (p._radicaciones>0?estadoObtencion(p):estadoInicio(p));
-  const obten=lista.filter(p=>p._listo).length;
-  const gest=lista.filter(p=>p._avance>0&&p._avance<100).length;
-  const enR=lista.filter(p=>critico(p).clase==='sem-rojo');
-  const prom=Math.round(lista.reduce((s,p)=>s+(p._avance||0),0)/lista.length);
+  const K = _cuentaGrupo(lista);
   const nProy=new Set(lista.map(p=>p.proyecto||'—')).size;
-  const riesgoPr=new Set(enR.map(p=>p.proyecto||'—')).size;
+  const riesgoPr=new Set(lista.filter(p=>critico(p).clase==='sem-rojo').map(p=>p.proyecto||'—')).size;
 
   const filtros=filtrosActivos();
   const filtrosHTML = filtros.length ? ('<div class="filtros"><b>Filtros aplicados — </b>'+filtros.join(' &nbsp;·&nbsp; ')+'</div>')
                                      : '<div class="filtros">Informe con <b>todos</b> los permisos (sin filtros aplicados).</div>';
 
-  // Detalle por proyecto
-  const grupos={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (grupos[k]=grupos[k]||[]).push(p); });
-  const porProyecto = Object.keys(grupos).sort().map(proy=>{
-    const g=grupos[proy]; const o=g.filter(p=>p._listo).length; const r=g.filter(p=>critico(p).clase==='sem-rojo').length;
-    return '<tr><td>'+esc(proy)+'</td><td class="mut">'+esc(nombreNegocio(g[0].negocio))+'</td><td class="tnum">'+g.length+'</td><td class="tnum">'+o+'</td><td class="tnum">'+r+'</td></tr>';
-  }).join('');
-
-  // Detalle de permisos
-  const detalle = lista.slice().sort((a,b)=>(a.proyecto||'').localeCompare(b.proyecto||'')).map(p=>{
-    const i=estadoInicio(p), o=estadoObtencion(p);
-    return '<tr><td>'+esc(p.proyecto||'—')+'</td><td>'+esc(p.frente||'—')+'</td><td>'+esc(p.pna||'—')+'</td><td>'+esc(p._autoridad||'—')
-      +'</td><td>'+esc(p.municipio||'—')+'</td><td>'+esc(estLabel(p._estadoActual))+'</td><td class="tnum">'+p._avance+'%</td><td>'+fmtDMY(p.fecha_limite_requerida)
-      +'</td><td><span class="chip" style="background:'+semHex(i.clase)+'">'+esc(i.txt)+'</span></td>'
-      +'<td><span class="chip" style="background:'+semHex(o.clase)+'">'+esc(o.txt)+'</span></td></tr>';
-  }).join('');
-
   let b = repHead('Informe de gestión de permisos (PNAs)');
   b += '<p class="rep-sub">Alcance del informe: '+lista.length+' permiso(s) en '+nProy+' proyecto(s).</p>';
   b += filtrosHTML;
 
-  b += '<section class="blq"><h2 class="blq-t">Resumen ejecutivo</h2><div class="kgrid">'
+  /* ---------- 1 · RESUMEN EJECUTIVO — mismos campos y convención (punto) del dashboard ---------- */
+  const kdot = c => '<span class="kd" style="background:'+c+'"></span>';
+  b += '<section class="blq"><h2 class="blq-t">Resumen ejecutivo</h2><div class="kgrid" style="grid-template-columns:repeat(4,1fr)">'
     +'<div class="kpi"><div class="k">Permisos</div><div class="v">'+lista.length+'</div></div>'
-    +'<div class="kpi t"><div class="k">Activados / Obtenidos</div><div class="v">'+obten+'</div></div>'
-    +'<div class="kpi b"><div class="k">En gestión</div><div class="v">'+gest+'</div></div>'
-    +'<div class="kpi r"><div class="k">En riesgo (perm. / proy.)</div><div class="v">'+enR.length+' / '+riesgoPr+'</div></div>'
-    +'<div class="kpi l"><div class="k">Avance promedio</div><div class="v">'+prom+'%</div></div>'
+    +'<div class="kpi"><div class="k">'+kdot('#0ca30c')+'Activados / Obtenidos</div><div class="v">'+K.obt+'</div></div>'
+    +'<div class="kpi"><div class="k">'+kdot('#5b6f7e')+'En gestión</div><div class="v">'+K.ges+'</div></div>'
+    +'<div class="kpi"><div class="k">'+kdot('#d03b3b')+'En riesgo (perm. / proy.)</div><div class="v">'+K.rie+' / '+riesgoPr+'</div></div>'
     +'</div></section>';
 
-  b += '<section class="blq"><h2 class="blq-t">Distribución</h2>'
-    + '<div class="dist">'
-      + tblDist('Por Negocio', conteoFijo(lista,'negocio',NEGOCIOS_CAT()).map(p=>[nombreNegocio(p[0]),p[1]]), lista.length)
-      + tblDist('Por Autoridad', conteoFijo(lista,'_autoridad',AUTORIDADES_CAT()), lista.length)
-    + '</div>'
-    + '<div class="dist" style="margin-top:14px">'
-      + tblDist('Por Tipo de permiso (PNA)', conteo(lista,'pna'), lista.length)
-      + tblDist('Riesgo de inicio', conteoFn(lista,estadoInicio), lista.length)
-    + '</div>'
-    + '<div class="dist" style="margin-top:14px">'
-      + tblDist('Riesgo de obtención', conteoFn(lista,estadoObtencion), lista.length)
-      + '<div></div>'
-    + '</div>'
-    + '</section>';
+  /* Avance del trámite y Permisos por proyecto van en reflujo de 2 columnas: los grupos
+     (que no se parten) llenan ambas columnas y evitan huecos al imprimir aunque la lista
+     sea larga. */
+  const gN={}; lista.forEach(p=>{ const n=p.negocio||'—'; (gN[n]=gN[n]||[]).push(p); });
+  let av='';
+  Object.keys(gN).sort().forEach(neg=>{
+    av += '<div><div class="av-neg">'+iconoNegocio(neg,14)+'<span>'+esc(nombreNegocio(neg))+'</span></div>';
+    const gP={}; gN[neg].forEach(p=>{ const pr=p.proyecto||'—'; (gP[pr]=gP[pr]||[]).push(p); });
+    Object.keys(gP).sort().forEach(proy=>{
+      av += '<div class="av-proy">'+esc(proy)+'</div>';
+      gP[proy].forEach(p=>{
+        av += '<div class="av-row"><span class="albl">'+esc(p.frente||p.nombre)+' <span class="mut">'+esc(p.pna||'')+'</span></span>'
+            + '<span class="abar"><span style="width:'+p._avance+'%"></span></span><span class="anum">'+p._avance+'%</span></div>';
+      });
+    });
+    av += '</div>';
+  });
+  b += '<section class="blq"><h2 class="blq-t">Avance del trámite</h2><div class="reflow">'+av+'</div></section>';
 
-  b += '<section class="blq"><h2 class="blq-t">Resumen por proyecto</h2><table><thead><tr><th>Proyecto</th><th>Negocio</th><th class="tnum">Permisos</th><th class="tnum">Obtenidos</th><th class="tnum">En riesgo</th></tr></thead><tbody>'+porProyecto+'</tbody></table></section>';
+  const gProy={}; lista.forEach(p=>{ const k=p.proyecto||'—'; (gProy[k]=gProy[k]||[]).push(p); });
+  let pp='';
+  Object.keys(gProy).sort().forEach(proy=>{
+    pp += '<div><div class="pp-proy">'+esc(proy)+'</div>';
+    gProy[proy].forEach(p=>{
+      const i=estadoInicio(p), o=estadoObtencion(p);
+      pp += '<div class="pp-item"><span class="ph">'+esc(p.frente||p.nombre)+'</span> <span class="pl">'+esc(p.pna||'')+'</span><br>'
+          + '<span class="pl">Inicio:</span> <span style="color:'+semHex(i.clase)+';font-weight:700">'+esc(i.txt)+'</span> &nbsp; '
+          + '<span class="pl">Obtención:</span> <span style="color:'+semHex(o.clase)+';font-weight:700">'+esc(o.txt)+'</span></div>';
+    });
+    pp += '</div>';
+  });
+  b += '<section class="blq"><h2 class="blq-t">Permisos por proyecto</h2>'
+    + '<div class="mut" style="font-size:9.6px;margin:-4px 0 8px"><b>Inicio</b> = ¿radicado a tiempo? &nbsp;·&nbsp; <b>Obtención</b> = ¿se obtendrá a tiempo?</div>'
+    + '<div class="reflow">'+pp+'</div></section>';
 
+  /* ---------- 2 · DISTRIBUCIÓN — sin porcentajes, con íconos/logos, mejor repartida ---------- */
+  b += '<section class="blq"><h2 class="blq-t">Distribución</h2><div class="distg">'
+      + tblDist('Por Negocio',   conteoFijo(lista,'negocio',NEGOCIOS_CAT()).map(p=>[nombreNegocio(p[0]),p[1]]), iconoNegocioPorNombre)
+      + tblDist('Por Autoridad', conteoFijo(lista,'_autoridad',AUTORIDADES_CAT()).map(p=>[nombreAutoridad(p[0]),p[1]]), iconoAutoridadPorNombre)
+      + tblDist('Por Tipo de permiso (PNA)', conteo(lista,'pna'), null)
+      + tblDist('Riesgo de inicio', conteoFn(lista,estadoInicio), null)
+      + tblDist('Riesgo de obtención', conteoFn(lista,estadoObtencion), null)
+    + '</div></section>';
+
+  /* ---------- 3 · RESUMEN POR PROYECTO — jerárquico Negocio › Proyecto › PNA ---------- */
+  b += '<section class="blq"><h2 class="blq-t">Resumen por proyecto</h2>'
+     + tablaJerarquica(lista) + '</section>';
+
+  /* ---------- 5 (tabla) · DETALLE DE PERMISOS ---------- */
+  const detalle = lista.slice().sort((a,b)=>(a.proyecto||'').localeCompare(b.proyecto||'')).map(p=>{
+    const i=estadoInicio(p), o=estadoObtencion(p);
+    return '<tr><td>'+esc(p.proyecto||'—')+'</td><td>'+esc(p.frente||'—')+'</td><td>'+esc(p.pna||'—')+'</td><td>'+esc(nombreAutoridad(p._autoridad))
+      +'</td><td>'+esc(p.municipio||'—')+'</td><td>'+esc(estLabel(p._estadoActual))+'</td><td class="tnum">'+p._avance+'%</td><td>'+fmtDMY(p.fecha_limite_requerida)
+      +'</td><td><span class="chip" style="background:'+semHex(i.clase)+'">'+esc(i.txt)+'</span></td>'
+      +'<td><span class="chip" style="background:'+semHex(o.clase)+'">'+esc(o.txt)+'</span></td></tr>';
+  }).join('');
   b += '<section class="blq"><h2 class="blq-t">Detalle de permisos</h2><table><thead><tr><th>Proyecto</th><th>Frente</th><th>PNA</th><th>Autoridad</th><th>Municipio</th><th>Estado actual</th><th class="tnum">Avance</th><th>F. límite</th><th>Inicio</th><th>Obtención</th></tr></thead><tbody>'+detalle+'</tbody></table></section>';
+
+  /* ---------- 5 (apéndice) · DETALLE AMPLIADO de los permisos marcados en la tabla ---------- */
+  const ampliados = lista.filter(p=> AMPLIAR_INFORME.has(p.nombre));
+  if(ampliados.length){
+    b += '<section class="blq" style="page-break-before:always"><h2 class="blq-t">Detalle ampliado ('+ampliados.length+' permiso'+(ampliados.length>1?'s':'')+')</h2>'
+       + '<div class="mut" style="font-size:9.6px;margin:-4px 0 6px">Histórico completo de los permisos marcados en la tabla del dashboard.</div>';
+    ampliados.forEach(p=>{
+      b += '<div class="ficha"><div class="ftit">'+esc(p.pna||'')+' · '+esc(p.frente||p.nombre)+'</div>'+fichaPermisoHTML(p)+'</div>';
+    });
+    b += '</section>';
+  }
 
   b += '<div class="foot"><span>Plataforma Control Integral PNAs</span><span>Documento generado automáticamente · '+new Date().toLocaleDateString('es-CO')+'</span></div>';
 
   abrirImpresion('Informe PNAs', b);
 }
+/* Ícono de negocio a partir del nombre LEGIBLE (para la tabla de distribución). */
+function iconoNegocioPorNombre(nombreLegible){
+  const map={'Acueducto y Alcantarillado':'Ger_Acueducto', 'Gas':'Ger_Gas',
+             'Transmisión y Distribución':'Ger_Transmisión', 'Generación':'Ger_Generación'};
+  return iconoNegocio(map[nombreLegible] || nombreLegible, 16);
+}
+/* Logo de autoridad a partir del nombre LEGIBLE (para la tabla de distribución). */
+function iconoAutoridadPorNombre(nombreLegible){
+  const map={'Municipio · Sec. Movilidad':'Municipio', 'INVIAS':'INVIAS', 'ANI':'ANI',
+             'Gobernación de Antioquia':'Gobernación'};
+  return iconoAutoridad(map[nombreLegible] || nombreLegible);
+}
+/* Tabla jerárquica del "Resumen por proyecto":
+   Negocio (consolidado) › Proyecto (consolidado) › una fila por tipo de PNA con su
+   cantidad, y las columnas Obtenidos · En gestión · En riesgo. */
+function tablaJerarquica(lista){
+  const gN={}; lista.forEach(p=>{ const n=p.negocio||'—'; (gN[n]=gN[n]||[]).push(p); });
+  let filas='';
+  Object.keys(gN).sort().forEach(neg=>{
+    const permsNeg=gN[neg];
+    const gP={}; permsNeg.forEach(p=>{ const pr=p.proyecto||'—'; (gP[pr]=gP[pr]||[]).push(p); });
+    const proyKeys=Object.keys(gP).sort();
+    // nº total de filas del negocio = suma de (nº de tipos PNA por proyecto)
+    let filasNeg=0; proyKeys.forEach(pr=>{ filasNeg += new Set(gP[pr].map(p=>p.pna||'—')).size; });
+    let primeraNeg=true;
+    proyKeys.forEach(proy=>{
+      const permsProy=gP[proy];
+      const pnaKeys=Object.keys(permsProy.reduce((m,p)=>{ (m[p.pna||'—']=m[p.pna||'—']||[]).push(p); return m; },{}));
+      const grupPna=permsProy.reduce((m,p)=>{ (m[p.pna||'—']=m[p.pna||'—']||[]).push(p); return m; },{});
+      const pnaSorted=pnaKeys.sort();
+      let primeraProy=true;
+      pnaSorted.forEach(pna=>{
+        const c=_cuentaGrupo(grupPna[pna]);
+        let tr='<tr>';
+        if(primeraNeg){ tr+='<td class="neg" rowspan="'+filasNeg+'"><div class="cell">'+iconoNegocio(neg,15)+'<span>'+esc(nombreNegocio(neg))+'</span></div></td>'; primeraNeg=false; }
+        if(primeraProy){ tr+='<td class="proy" rowspan="'+pnaSorted.length+'">'+esc(proy)+'</td>'; primeraProy=false; }
+        tr+='<td class="pna">'+esc(pna)+' <b>×'+c.total+'</b></td>'
+          + '<td class="n">'+c.obt+'</td>'
+          + '<td class="n">'+c.ges+'</td>'
+          + '<td class="n rie" style="color:'+(c.rie?'#c0392b':'#71827a')+'">'+c.rie+'</td></tr>';
+        filas+=tr;
+      });
+    });
+  });
+  return '<table class="jer"><thead><tr><th>Negocio</th><th>Proyecto</th><th>Permisos (por tipo)</th>'
+       + '<th class="n">Obtenidos</th><th class="n">En gestión</th><th class="n">En riesgo</th></tr></thead><tbody>'
+       + (filas||'<tr><td colspan="6" class="mut">Sin datos.</td></tr>') + '</tbody></table>';
+}
 function generarPDFPermiso(nombre){
   const p=PERMISOS.find(x=>x.nombre===nombre); if(!p){ alert('No se encontró el permiso.'); return; }
-  const i=estadoInicio(p), o=estadoObtencion(p);
   let b = repHead('Ficha de permiso · '+(p.pna||''));
   b += '<p class="rep-sub">'+esc(p.nombre)+'</p>';
-  b += '<section class="blq"><h2 class="blq-t">Identificación</h2><div class="idcard">'
-    +'<div><span>Proyecto:</span> <b>'+esc(p.proyecto||'—')+'</b></div>'
-    +'<div><span>Código Banco:</span> <b>'+esc(p.codigo_banco||'—')+'</b></div>'
-    +'<div><span>Negocio:</span> '+esc(nombreNegocio(p.negocio))+'</div>'
-    +'<div><span>Frente:</span> '+esc(p.frente||'—')+'</div>'
-    +'<div><span>Autoridad:</span> '+esc(p._autoridad||'—')+'</div>'
-    +'<div><span>Municipio:</span> '+esc(p.municipio||'—')+'</div>'
-    +'<div><span>Fecha límite requerida:</span> <b>'+fmtDMY(p.fecha_limite_requerida)+'</b></div>'
-    +'<div><span>Holgura (días):</span> '+esc(p.holgura_dias||'0')+'</div>'
-    +'</div></section>';
-  b += '<section class="blq"><h2 class="blq-t">Estado y semáforos</h2><div class="kgrid" style="grid-template-columns:repeat(4,1fr)">'
-    +'<div class="kpi"><div class="k">Estado actual</div><div class="v" style="font-size:13px">'+esc(estLabel(p._estadoActual))+'</div></div>'
-    +'<div class="kpi l"><div class="k">Avance</div><div class="v">'+p._avance+'%</div></div>'
-    +'<div class="kpi" style="border-left-color:'+semHex(i.clase)+'"><div class="k">Riesgo de inicio</div><div class="v" style="font-size:13px;color:'+semHex(i.clase)+'">'+esc(i.txt)+'</div></div>'
-    +'<div class="kpi" style="border-left-color:'+semHex(o.clase)+'"><div class="k">Riesgo de obtención</div><div class="v" style="font-size:13px;color:'+semHex(o.clase)+'">'+esc(o.txt)+'</div></div>'
-    +'</div></section>';
-  const hist=p.historial||[];
-  const tl = hist.length ? '<div class="tl2">'+hist.map((h,idx)=>'<div class="it"><div class="est">'+(idx+1)+' · '+esc(estLabel(h.estado_tramite))+(h.culminado?' ✔':'')+'</div>'
-      +'<div class="mut">Radicado: '+esc(h.radicado||'—')+' · Radicación: '+fmtDMY(h.fecha_radicacion)+' · Rad. respuesta: '+esc(h.radicado_respuesta||'—')+' · F. respuesta: '+fmtDMY(h.fecha_respuesta)+'</div>'
-      +(h.observacion?('<div>'+esc(h.observacion)+'</div>'):'')+'</div>').join('')+'</div>'
-    : '<p class="mut">Sin historial registrado.</p>';
-  b += '<section class="blq"><h2 class="blq-t">Historial del trámite ('+hist.length+' registro(s))</h2>'+tl+'</section>';
+  b += '<section class="blq">'+fichaPermisoHTML(p)+'</section>';
   b += '<div class="foot"><span>Plataforma Control Integral PNAs</span><span>'+new Date().toLocaleDateString('es-CO')+'</span></div>';
   abrirImpresion('Permiso '+(p.codigo_banco||'')+' '+(p.pna||''), b);
 }
+/* Permisos marcados para "ampliar detalle" en el informe general (por nombre). */
+const AMPLIAR_INFORME = new Set();
+function toggleAmpliar(nombre, on){ if(on) AMPLIAR_INFORME.add(nombre); else AMPLIAR_INFORME.delete(nombre); }
 
 /* ================= ARRANQUE ================= */
 $(document).ready(async function(){
