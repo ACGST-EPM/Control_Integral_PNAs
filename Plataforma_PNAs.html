@@ -63,6 +63,12 @@
   /* Si el usuario pidió reducir el movimiento en su sistema, el anillo rojo se queda
      fijo: el color por sí solo sigue identificando el permiso en riesgo. */
   @media (prefers-reduced-motion: reduce){ .pulse-rojo{ animation:none; opacity:1; } }
+  /* Etiqueta del tipo de permiso sobre la geometría. Como el color del mapa ya no
+     identifica el tipo, éste se LEE en vez de adivinarse. Se muestra solo a partir
+     de cierto zoom para que la vista panorámica no se sature de texto. */
+  .pna-pill{ background:#fff; border:1.5px solid #495057; border-radius:9px; padding:0 5px;
+             font-size:.62rem; font-weight:700; color:#212529; white-space:nowrap;
+             box-shadow:0 1px 2px rgba(0,0,0,.25); line-height:15px; }
   /* Popup del mapa: compacto, proporcionado y contenido dentro del área */
   .leaflet-popup-content{ margin:10px 12px; width:248px !important; }
   .pp{ font-size:.78rem; color:#343a40; line-height:1.3; }
@@ -245,6 +251,17 @@
       </div>
     </div>
     <div class="col-12 col-lg-8 col-mapa">
+      <!-- Conmutador: el mapa pinta una sola dimensión a la vez -->
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <span class="mini fw-bold">Colorear el mapa por:</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Dimensión que colorea el mapa">
+          <input type="radio" class="btn-check" name="vistaMapa" id="vmRiesgo" value="riesgo" checked>
+          <label class="btn btn-outline-success" for="vmRiesgo">🚦 Riesgo</label>
+          <input type="radio" class="btn-check" name="vistaMapa" id="vmAutoridad" value="autoridad">
+          <label class="btn btn-outline-primary" for="vmAutoridad">🏛️ Autoridad</label>
+        </div>
+        <span class="mini" id="vistaNota" style="color:#6c757d"></span>
+      </div>
       <div id="map"></div>
       <div class="leyenda mt-2" id="leyenda"></div>
     </div>
@@ -594,8 +611,42 @@ function ajustarMapaAlContenedor(){
   else{ document.addEventListener('shown.bs.collapse', sincronizar);
         document.addEventListener('hidden.bs.collapse', sincronizar); }
 }
-const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935', sinfecha:'#d56b00'};
-const ITIN_TXT = {verde:'En plazo', amarillo:'Próximo al límite', rojo:'En riesgo', sinfecha:'Falta fecha límite'};
+/* ================= COLOR DEL MAPA =================
+   El mapa pinta UNA sola dimensión a la vez, la que elija el usuario en el
+   conmutador "Colorear el mapa por". Mezclar dos (antes: tipo de permiso en la
+   geometría + estado en el aro) ponía nueve colores a competir y ninguna
+   ordenación posible superaba los umbrales de separación cromática.
+   Ambas paletas están validadas todos-contra-todos con el validador del sistema
+   de diseño; la de autoridad evita a propósito los tonos del semáforo para que
+   al cambiar de vista ningún color se lea como un estado. */
+let VISTA_MAPA = 'riesgo';   // 'riesgo' (por defecto) | 'autoridad'
+
+const COLOR_ESTADO = {
+  plazo:    '#0ca30c',   // en plazo
+  proximo:  '#eda100',   // próximo al límite
+  riesgo:   '#d03b3b',   // en riesgo / vencido — el único que titila
+  sinfecha: '#4a3aa7',   // falta la fecha límite: dato faltante, no un grado de gravedad
+  obtenido: '#8a978f'    // obtenido/activado: salió del ciclo, gris neutro
+};
+const TXT_ESTADO = {
+  plazo:'En plazo', proximo:'Próximo al límite', riesgo:'En riesgo / vencido',
+  sinfecha:'Falta fecha límite', obtenido:'Obtenido / activado'
+};
+const COLOR_AUT = {
+  municipio:'#2a78d6', invias:'#eb6834', ani:'#1baf7a', gobernacion:'#4a3aa7', otro:'#8a978f'
+};
+/* Estado del permiso para pintar el mapa: una sola etiqueta por permiso. */
+function estadoMapa(p){
+  if(p._listo) return 'obtenido';
+  const n = (p._itinerancia && p._itinerancia.activa) ? p._itinerancia.nivel : null;
+  return ({verde:'plazo', amarillo:'proximo', rojo:'riesgo', sinfecha:'sinfecha'})[n] || 'obtenido';
+}
+function colorAutoridad(aut){ return COLOR_AUT[autInfo(aut).key] || COLOR_AUT.otro; }
+/* Punto donde se ancla la etiqueta del tipo: promedio de los vértices. */
+function centroDe(coords){
+  const n=coords.length;
+  return [coords.reduce((s,c)=>s+c[0],0)/n, coords.reduce((s,c)=>s+c[1],0)/n];
+}
 let LISTA_MAPA = null;   // última lista dibujada, para reescalar al hacer zoom
 /* Factor de escala según el zoom: al ALEJAR (zoom bajo) la geometría se engrosa/agranda
    para no perderse de vista; al acercar, vuelve a su tamaño natural. */
@@ -625,7 +676,7 @@ function popupPermiso(p){
   const semLabel = radicado ? 'Riesgo de obtención' : 'Riesgo de inicio';
   const row=(k,v)=>`<div class="pp-k">${k}</div><div class="pp-v">${v}</div>`;
   return `<div class="pp">
-    <div class="pp-h"><span>${esc(p.proyecto||'—')}</span><span class="pp-pna" style="background:${p._color}">${esc(p.pna||'')}</span></div>
+    <div class="pp-h"><span>${esc(p.proyecto||'—')}</span><span class="pp-pna" style="background:#495057">${esc(p.pna||'')}</span></div>
     <div class="pp-grid">
       ${row('Frente', esc(p.frente||'—'))}
       ${row('Municipio', esc(p.municipio||'—'))}
@@ -682,36 +733,50 @@ function dibujarMapa(lista, reencuadrar){
     capa.addLayer(casing);
   });
 
-  // PASADA 2 — Anillo de gestión de TODOS los permisos que siguen pendientes.
-  // El COLOR dice en qué estado está (verde en plazo · amarillo próximo al límite ·
-  // rojo en riesgo · naranja punteado si falta la fecha límite) y el MOVIMIENTO queda
-  // reservado al nivel crítico: si todo parpadeara, el parpadeo dejaría de significar
-  // algo y lo verdaderamente urgente se perdería entre lo que va bien.
-  // Los permisos ya obtenidos/activados no llevan anillo: salieron del ciclo.
-  visibles.forEach(p=>{
-    const it = p._itinerancia;
-    if(!(it && it.activa)) return;
-    const colH = ITIN_COL[it.nivel] || ITIN_COL.verde;
-    const cls  = (it.nivel==='rojo') ? 'pulse-rojo' : '';
-    const dash = (it.nivel==='sinfecha') ? '10 7' : null;   // punteado = dato faltante, no urgencia
-    let anillo;
-    if(p.geomType==='Point') anillo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:4,fill:false,className:cls,dashArray:dash});
-    else if(p.geomType==='Polygon') anillo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls,dashArray:dash});
-    else anillo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls,dashArray:dash});
-    capa.addLayer(anillo);
-  });
+  // PASADA 2 — Aro TITILANTE, solo sobre los permisos en riesgo y solo en la vista
+  // de Riesgo. El movimiento es el estímulo visual más fuerte de una interfaz: se
+  // reserva al único estado que exige actuar hoy, para que siga significando algo.
+  if(VISTA_MAPA==='riesgo'){
+    visibles.forEach(p=>{
+      if(estadoMapa(p)!=='riesgo') return;
+      const colH = COLOR_ESTADO.riesgo, cls='pulse-rojo';
+      let anillo;
+      if(p.geomType==='Point') anillo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:4,fill:false,className:cls});
+      else if(p.geomType==='Polygon') anillo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls});
+      else anillo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls});
+      capa.addLayer(anillo);
+    });
+  }
 
-  // PASADA 3 — Geometría de cada permiso, con el color de su tipo de permiso.
+  // PASADA 3 — Geometría de cada permiso, coloreada por la dimensión activa.
   visibles.forEach(p=>{
-    const col=p._color;
+    let col, dash=null;
+    if(VISTA_MAPA==='autoridad'){
+      col = colorAutoridad(p._autoridad);
+    } else {
+      const e = estadoMapa(p);
+      col  = COLOR_ESTADO[e];
+      dash = (e==='sinfecha') ? '9 6' : null;   // punteado = dato faltante, no urgencia
+    }
     let lyr;
-    if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:rPunto,color:col,fillColor:col,fillOpacity:.9});
-    else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:wPolig,fillOpacity:.30});
-    else lyr=L.polyline(p.coords,{color:col,weight:wLinea});
+    if(p.geomType==='Point') lyr=L.circleMarker(p.coords[0],{radius:rPunto,color:col,fillColor:col,fillOpacity:.9,dashArray:dash});
+    else if(p.geomType==='Polygon') lyr=L.polygon(p.coords,{color:col,weight:wPolig,fillOpacity:.30,fillColor:col,dashArray:dash});
+    else lyr=L.polyline(p.coords,{color:col,weight:wLinea,dashArray:dash});
     lyr.bindPopup(popupPermiso(p));
     lyr.__permiso = p.nombre;
     capa.addLayer(lyr); p.coords.forEach(c=>pts.push(c));
   });
+
+  // PASADA 4 — Etiqueta con el tipo de permiso. Como el color ya no identifica el
+  // tipo, éste se lee. Solo a partir de zoom 13: en la vista panorámica la pregunta
+  // es "¿dónde hay problemas?", y el texto encimado solo estorbaría.
+  if(map.getZoom()>=13){
+    visibles.forEach(p=>{
+      const t = (p.pna||'').trim(); if(!t) return;
+      capa.addLayer(L.marker(centroDe(p.coords), {interactive:false, keyboard:false,
+        icon:L.divIcon({className:'', html:`<span class="pna-pill">${esc(t)}</span>`, iconSize:null})}));
+    });
+  }
   // Si el usuario tenía abierta la ficha de un permiso, se vuelve a abrir: redibujar
   // (por zoom o por un cambio de tamaño del panel) no debe cerrarle lo que estaba leyendo.
   if(permisoConPopup){
@@ -723,25 +788,46 @@ function dibujarMapa(lista, reencuadrar){
   // pierda toda referencia del entorno; el padding deja aire para el borde y el halo.
   if(reencuadrar && pts.length){ try{ map.fitBounds(L.latLngBounds(pts).pad(0.2),{maxZoom:16,padding:[24,24]}); }catch(e){} }
 }
+/* La leyenda cambia con la vista activa: siempre describe la única dimensión que
+   el mapa está pintando en ese momento, para que un color nunca quede sin explicar. */
 function leyenda(){
-  const box=document.getElementById('leyenda');
-  const cols=(CAT.permisos||CAT_SEED.permisos).map(p=>`<span><i style="background:${p.color}"></i>${esc(p.pna)}</span>`).join('');
+  const box=document.getElementById('leyenda'); if(!box) return;
   const shapes = `<span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#6c757d"/></svg> Punto</span>`
     + `<span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="#6c757d" stroke-width="4" stroke-linecap="round"/></svg> Línea</span>`
     + `<span><svg width="16" height="14"><rect x="2" y="2" width="12" height="10" rx="1" fill="#6c757d" fill-opacity="0.35" stroke="#6c757d" stroke-width="1.5"/></svg> Polígono</span>`;
-  // Anillo de gestión: un aro de color alrededor de la geometría. El color dice el estado;
-  // solo el crítico se mueve. Se dibuja cada muestra como un aro (no un cuadro relleno)
-  // para que el usuario reconozca en la leyenda la misma forma que ve en el mapa.
-  const aro = (color, extra)=> `<svg width="17" height="15" style="vertical-align:middle">`
-    + `<rect x="2" y="2" width="13" height="11" rx="2" fill="none" stroke="${color}" stroke-width="3" ${extra||''}/></svg>`;
-  const itin = `<span>${aro('#00A651')} En plazo</span>`
-    + `<span>${aro('#F2C200')} Próximo al límite</span>`
-    + `<span>${aro('#E53935')} <b class="pulse-rojo" style="color:#E53935">En riesgo (titila)</b></span>`
-    + `<span>${aro('#d56b00','stroke-dasharray="4 3"')} Falta fecha límite</span>`
-    + `<span><svg width="17" height="15" style="vertical-align:middle"><rect x="3" y="3" width="11" height="9" rx="1" fill="#6c757d" fill-opacity=".35" stroke="#6c757d" stroke-width="1.5"/></svg> Sin aro = obtenido</span>`;
-  box.innerHTML = `<div class="mb-1"><b class="mini text-success">Tipo de permiso (color):</b> ${cols}</div>`
+  // Muestra con la misma apariencia que la geometría en el mapa: relleno tenue + borde.
+  const caja = (color, extra)=> `<svg width="18" height="14" style="vertical-align:middle">`
+    + `<rect x="1.5" y="1.5" width="15" height="11" rx="2" fill="${color}" fill-opacity=".30" stroke="${color}" stroke-width="2.5" ${extra||''}/></svg>`;
+
+  let titulo, muestras;
+  if(VISTA_MAPA==='autoridad'){
+    titulo = 'Autoridad que otorga el permiso (color)';
+    muestras = `<span>${caja(COLOR_AUT.municipio)} Municipio · Sec. Movilidad</span>`
+      + `<span>${caja(COLOR_AUT.invias)} INVIAS</span>`
+      + `<span>${caja(COLOR_AUT.ani)} ANI</span>`
+      + `<span>${caja(COLOR_AUT.gobernacion)} Gobernación de Antioquia</span>`;
+  } else {
+    titulo = 'Estado del trámite (color)';
+    muestras = `<span>${caja(COLOR_ESTADO.plazo)} ${TXT_ESTADO.plazo}</span>`
+      + `<span>${caja(COLOR_ESTADO.proximo)} ${TXT_ESTADO.proximo}</span>`
+      + `<span>${caja(COLOR_ESTADO.riesgo)} <b class="pulse-rojo" style="color:${COLOR_ESTADO.riesgo}">${TXT_ESTADO.riesgo} (titila)</b></span>`
+      + `<span>${caja(COLOR_ESTADO.sinfecha,'stroke-dasharray="4 3"')} ${TXT_ESTADO.sinfecha}</span>`
+      + `<span>${caja(COLOR_ESTADO.obtenido)} ${TXT_ESTADO.obtenido}</span>`;
+  }
+  box.innerHTML = `<div class="mb-1"><b class="mini text-success">${titulo}:</b> ${muestras}</div>`
     + `<div class="mb-1"><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`
-    + `<div><b class="mini text-success">Anillo de gestión (estado del trámite):</b> ${itin}</div>`;
+    + `<div><b class="mini text-success">Tipo de permiso:</b> <span class="pna-pill">PUZV</span>`
+    + ` <span class="mini">etiqueta sobre cada permiso (visible al acercar el zoom)</span></div>`;
+
+  const nota=document.getElementById('vistaNota');
+  if(nota) nota.textContent = (VISTA_MAPA==='autoridad')
+    ? 'En esta vista el estado no se pinta.' : '';
+}
+/* Cambia la dimensión que colorea el mapa y repinta sin mover el encuadre. */
+function cambiarVistaMapa(v){
+  VISTA_MAPA = (v==='autoridad') ? 'autoridad' : 'riesgo';
+  leyenda();
+  if(LISTA_MAPA) dibujarMapa(LISTA_MAPA, false);
 }
 /* Círculo de color para acompañar el texto del semáforo */
 function dot(clase){
@@ -1000,7 +1086,9 @@ function refrescarTodo(){
   renderAvanceTramite(lista);
   renderPorProyecto(lista);
   renderDistFull('distNegocio', conteoFijo(lista,'negocio', NEGOCIOS_CAT()), negocioColor);
-  renderDistFull('distAutoridad', conteoFijo(lista,'_autoridad', AUTORIDADES_CAT()), a=>autInfo(a).color);
+  // Mismos colores que la vista "Autoridad" del mapa, para que el gráfico y el mapa
+  // se lean como una sola cosa al conmutar.
+  renderDistFull('distAutoridad', conteoFijo(lista,'_autoridad', AUTORIDADES_CAT()), colorAutoridad);
   refrescarFiltros();
 }
 
@@ -1288,6 +1376,9 @@ $(document).ready(async function(){
   document.getElementById('rtStop').addEventListener('click', rtStop);
   document.getElementById('rtReset').addEventListener('click', rtReset);
   document.getElementById('rtSlider').addEventListener('input', function(){ rtStop(); rtIrA(parseInt(this.value)||0); });
+  // Conmutador de la dimensión que colorea el mapa
+  document.querySelectorAll('input[name="vistaMapa"]').forEach(r=>
+    r.addEventListener('change', function(){ if(this.checked) cambiarVistaMapa(this.value); }));
   // Fechas por defecto del recorrido: de hoy a hoy + 6 meses
   (function(){
     const h=new Date(); const f=new Date(); f.setMonth(f.getMonth()+6);
