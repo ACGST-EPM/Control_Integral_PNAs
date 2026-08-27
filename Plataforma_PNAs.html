@@ -95,6 +95,12 @@
   .distf-lbl .num{ font-weight:700; color:#333; flex:0 0 auto; }
   /* "Avance del trámite": agrupación Negocio › Proyecto › Permisos */
   .av-neg{ font-size:.72rem; font-weight:700; color:#0b6b34; background:#eef6ef; border-radius:5px; padding:3px 8px; margin:7px 0 3px; }
+  .av-neg-ico{ display:flex; align-items:center; gap:6px; }
+  /* Fila de distribución con ícono: la identidad va a la izquierda, la barra a la derecha. */
+  .distf-ico{ display:flex; align-items:center; gap:9px; }
+  .distf-ico .dico{ flex:0 0 30px; height:28px; display:flex; align-items:center; justify-content:center;
+                    background:#f2f6f2; border:1px solid #dfe8e0; border-radius:6px; }
+  .distf-ico .dtxt{ flex:1; min-width:0; }
   .av-proy{ font-size:.7rem; font-weight:700; color:#495057; margin:4px 0 2px 6px; }
   .av-row{ display:flex; align-items:center; gap:6px; font-size:.7rem; margin:0 0 3px 12px; }
   .av-row .albl{ flex:1; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -837,7 +843,61 @@ function dot(clase){
 
 /* ================= GRÁFICOS (SVG puro, sin dependencias) ================= */
 /* Avance en la familia verde/lima de EPM (no es una alerta): más verde = más avanzado. */
-function colorAvance(pct){ return pct>=80?'#009300':(pct>=50?'#53ad00':(pct>=25?'#7cb900':'#b7c200')); }
+/* ================= IDENTIDAD DE NEGOCIO Y AUTORIDAD =================
+   En los paneles de distribución la identidad la lleva el ÍCONO y el nombre, no el
+   color: la etiqueta ya está escrita junto a la barra, así que pintar cada barra de
+   un color distinto no añadía información y sí metía ocho colores más en la pantalla.
+   Las barras quedan en una sola tinta neutra y el color con carga semántica en esta
+   zona vuelve a ser únicamente el del semáforo. */
+const TINTA_BARRA = '#5b6f7e';   // tinta neutra: la barra mide cantidad, no identifica
+const VERDE_AVANCE = '#0b6b34';  // verde EPM para el avance: una sola tinta, sin degradado
+
+/* Íconos de negocio dibujados en SVG (no dependen de ningún archivo: cargan siempre).
+   Si más adelante EPM entrega iconografía oficial, basta sustituir cada entrada. */
+const ICONO_NEGOCIO = {
+  agua:  '<path d="M12 2.7c3.4 4 5.6 6.8 5.6 9.6A5.6 5.6 0 0 1 12 17.9a5.6 5.6 0 0 1-5.6-5.6c0-2.8 2.2-5.6 5.6-9.6z"/><path d="M9.4 12.6a2.6 2.6 0 0 0 2.6 2.6"/>',
+  gas:   '<path d="M12 2.5s4.8 4.2 4.8 8.6a4.8 4.8 0 0 1-9.6 0c0-1.7.8-3.3 1.7-4.5.3 1.2 1 2 1.9 2.3.5-2.6.2-4.6 1.2-6.4z"/><path d="M12 19.6a2.4 2.4 0 0 0 2.4-2.4c0-1.3-1.2-2.4-2.4-3.9-1.2 1.5-2.4 2.6-2.4 3.9A2.4 2.4 0 0 0 12 19.6z"/>',
+  trans: '<path d="M7.5 21 12 3l4.5 18"/><path d="M8.7 16.2h6.6M9.6 11.4h4.8"/><path d="M4.5 8.4 12 6.6l7.5 1.8"/>',
+  gen:   '<path d="M13.4 2.4 5.2 13.2h5.6l-1 8.4 8.2-10.8h-5.6z"/>'
+};
+/* Clasifica el negocio por su nombre técnico (tolera variantes de escritura del KMZ). */
+function claveNegocio(n){
+  n=(n||'').toLowerCase();
+  if(n.includes('acueducto')||n.includes('alcantarillado')||n.includes('agua')) return 'agua';
+  if(n.includes('gas'))      return 'gas';
+  if(n.includes('transmis')||n.includes('distribuc')) return 'trans';
+  if(n.includes('generac'))  return 'gen';
+  return null;
+}
+/* Nombre en lenguaje natural. El nombre técnico (Ger_…) se conserva intacto en el
+   dato, los filtros, la tabla y el KMZ; esto solo cambia cómo se muestra aquí. */
+function nombreNegocio(n){
+  return ({agua:'Acueducto y Alcantarillado', gas:'Gas',
+           trans:'Transmisión y Distribución', gen:'Generación'})[claveNegocio(n)]
+         || String(n||'—').replace(/^Ger_/,'').replace(/[_-]/g,' ');
+}
+function iconoNegocio(n, px){
+  const k=claveNegocio(n); if(!k) return '';
+  const s=px||18;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${VERDE_AVANCE}"`
+    + ` stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONO_NEGOCIO[k]}</svg>`;
+}
+/* Logo de la autoridad para los paneles (reutiliza los ya incrustados en LOGOS). */
+function iconoAutoridad(aut){
+  const i=autInfo(aut);
+  if(i.img) return `<img src="${i.img}" alt="${esc(i.label)}" style="max-width:30px;max-height:20px;object-fit:contain">`;
+  if(i.key==='municipio') return `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3 6v5c0 5 3.8 8.6 9 11 5.2-2.4 9-6 9-11V6z" fill="#2E7D32"/><path d="M7.5 12l2.8 2.8L16.5 8.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return '';
+}
+/* Nombre corto y legible de la autoridad. */
+function nombreAutoridad(aut){
+  const i=autInfo(aut);
+  return ({municipio:'Municipio · Sec. Movilidad', invias:'INVIAS', ani:'ANI',
+           gobernacion:'Gobernación de Antioquia'})[i.key] || (aut||'—');
+}
+/* El % de avance ya lo dicen la longitud de la barra y el número; un degradado de
+   cuatro verdes lo re-codificaba por tercera vez. Una sola tinta. */
+function colorAvance(){ return VERDE_AVANCE; }
 function donutSVG(pct, size){
   pct=Math.max(0,Math.min(100,Math.round(+pct||0))); size=size||130;
   const sw=Math.round(size*0.12), r=size/2-sw/2-2, c=2*Math.PI*r, off=c*(1-pct/100), col=colorAvance(pct);
@@ -858,12 +918,21 @@ function renderDist(elId, pairs, colorFn){
   }).join('') : '<i class="mini">Sin datos.</i>';
 }
 /* Distribución con etiqueta COMPLETA (sin truncar) y espacio vertical repartido entre categorías. */
-function renderDistFull(elId, pairs, colorFn){
+/* iconFn y labelFn son opcionales: cuando se pasan, la identidad de cada fila la
+   llevan el ícono y el nombre legible, y la barra queda en una sola tinta. */
+function renderDistFull(elId, pairs, colorFn, iconFn, labelFn){
   const box=document.getElementById(elId); if(!box) return;
   const max=Math.max(1, ...pairs.map(p=>p[1]));
   box.innerHTML = pairs.length ? '<div class="distf">'+pairs.map(p=>{
-    const w=Math.round(p[1]/max*100), col=colorFn?colorFn(p[0]):'#009300';
-    return `<div class="distf-row"><div class="distf-lbl"><span>${esc(p[0])}</span><span class="num">${p[1]}</span></div><div class="barra"><span style="width:${w}%;background:${col}"></span></div></div>`;
+    const w=Math.round(p[1]/max*100), col=colorFn?colorFn(p[0]):TINTA_BARRA;
+    const ico=iconFn?iconFn(p[0]):'', txt=labelFn?labelFn(p[0]):p[0];
+    const barra=`<div class="distf-lbl"><span>${esc(txt)}</span><span class="num">${p[1]}</span></div>`
+      + `<div class="barra"><span style="width:${w}%;background:${col}"></span></div>`;
+    // Si el panel usa íconos, TODAS las filas llevan la casilla — aunque una se quede
+    // sin ícono — para que la columna de texto no se desalinee.
+    return iconFn
+      ? `<div class="distf-row distf-ico"><span class="dico">${ico}</span><span class="dtxt">${barra}</span></div>`
+      : `<div class="distf-row">${barra}</div>`;
   }).join('')+'</div>' : '<i class="mini">Sin datos.</i>';
 }
 /* Conteo por categorías FIJAS: siempre lista todas (aunque tengan 0), para repartir el espacio por igual. */
@@ -877,7 +946,7 @@ function renderAvanceTramite(lista){
   const gN={}; lista.forEach(p=>{ const n=p.negocio||'—'; (gN[n]=gN[n]||[]).push(p); });
   let html='';
   Object.keys(gN).sort().forEach(neg=>{
-    html += `<div class="av-neg">${esc(neg)}</div>`;
+    html += `<div class="av-neg av-neg-ico">${iconoNegocio(neg,16)}<span>${esc(nombreNegocio(neg))}</span></div>`;
     const gP={}; gN[neg].forEach(p=>{ const pr=p.proyecto||'—'; (gP[pr]=gP[pr]||[]).push(p); });
     Object.keys(gP).sort().forEach(proy=>{
       html += `<div class="av-proy">${esc(proy)}</div>`;
@@ -892,14 +961,6 @@ function renderAvanceTramite(lista){
 function conteo(lista, campo){
   const m={}; lista.forEach(p=>{ const k=p[campo]||'—'; m[k]=(m[k]||0)+1; });
   return Object.keys(m).map(k=>[k,m[k]]).sort((a,b)=>b[1]-a[1]);
-}
-function negocioColor(n){
-  n=(n||'').toLowerCase();
-  if(n.includes('acueducto')) return '#1565C0';
-  if(n.includes('gas'))       return '#d5a000';
-  if(n.includes('transmis'))  return '#00897B';
-  if(n.includes('generac'))   return '#2E7D32';
-  return '#6c757d';
 }
 function nivelToClase(n){ return n==='verde'?'sem-verde':(n==='amarillo'?'sem-amarillo':(n==='rojo'?'sem-rojo':'sem-gris')); }
 /* Semáforo de INICIO del trámite = ¿se radicó (inició) a tiempo?
@@ -1028,7 +1089,8 @@ const FILTROS_SEL = '#fPNA,#fAut,#fNeg,#fMun,#fFrn,#fEst,#fRie,#fGes,#fProy';
 function refrescarFiltros(){
   llenarFiltro('fPNA', PERMISOS.map(p=>p.pna));
   llenarFiltro('fAut', PERMISOS.map(p=>p._autoridad));
-  llenarFiltro('fNeg', PERMISOS.map(p=>p.negocio));
+  // Se muestra el nombre legible pero se filtra por el valor técnico del KMZ.
+  llenarFiltro('fNeg', PERMISOS.map(p=>p.negocio), nombreNegocio);
   llenarFiltro('fMun', PERMISOS.map(p=>p.municipio));
   llenarFiltro('fFrn', PERMISOS.map(p=>p.frente));
   llenarFiltro('fEst', PERMISOS.map(p=>p._estadoActual), estLabel);
@@ -1085,10 +1147,11 @@ function refrescarTodo(){
   // Gráficos
   renderAvanceTramite(lista);
   renderPorProyecto(lista);
-  renderDistFull('distNegocio', conteoFijo(lista,'negocio', NEGOCIOS_CAT()), negocioColor);
-  // Mismos colores que la vista "Autoridad" del mapa, para que el gráfico y el mapa
-  // se lean como una sola cosa al conmutar.
-  renderDistFull('distAutoridad', conteoFijo(lista,'_autoridad', AUTORIDADES_CAT()), colorAutoridad);
+  // Identidad por ícono + nombre legible; la barra, en una sola tinta neutra.
+  renderDistFull('distNegocio',  conteoFijo(lista,'negocio', NEGOCIOS_CAT()),
+                 ()=>TINTA_BARRA, iconoNegocio,  nombreNegocio);
+  renderDistFull('distAutoridad', conteoFijo(lista,'_autoridad', AUTORIDADES_CAT()),
+                 ()=>TINTA_BARRA, iconoAutoridad, nombreAutoridad);
   refrescarFiltros();
 }
 
