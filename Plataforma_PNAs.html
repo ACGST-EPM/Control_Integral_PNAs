@@ -56,11 +56,13 @@
   .dist-row .lbl{ width:150px; text-align:right; color:#495057; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .dist-row .barra{ flex:1; }
   .dist-row .num{ width:26px; font-weight:bold; color:#333; }
-  /* Itinerancia: contorno titilante en el mapa (velocidad según urgencia) */
-  @keyframes titilar { 0%,100%{ opacity:.18; } 50%{ opacity:1; } }
-  .pulse-verde{ animation: titilar 2.4s ease-in-out infinite; }     /* lenta */
-  .pulse-amarillo{ animation: titilar 1.4s ease-in-out infinite; }  /* media */
-  .pulse-rojo{ animation: titilar 0.7s ease-in-out infinite; }      /* rápida */
+  /* Anillo de gestión: el titileo se reserva al nivel crítico (rojo). Los demás estados
+     informan por color sin moverse, para que el movimiento siga significando "atiende esto". */
+  @keyframes titilar { 0%,100%{ opacity:.25; } 50%{ opacity:1; } }
+  .pulse-rojo{ animation: titilar 0.9s ease-in-out infinite; }
+  /* Si el usuario pidió reducir el movimiento en su sistema, el anillo rojo se queda
+     fijo: el color por sí solo sigue identificando el permiso en riesgo. */
+  @media (prefers-reduced-motion: reduce){ .pulse-rojo{ animation:none; opacity:1; } }
   /* Popup del mapa: compacto, proporcionado y contenido dentro del área */
   .leaflet-popup-content{ margin:10px 12px; width:248px !important; }
   .pp{ font-size:.78rem; color:#343a40; line-height:1.3; }
@@ -444,12 +446,19 @@ function calcular(p){
   //  - Listo/Activado: sin itinerancia.
   // Umbrales (uVerde/uAmar) iguales al riesgo: ≠PMT 45/30 · PMT 30/20.
   let itin = {activa:false, nivel:'verde', dh:null, base:''};
-  if(!listo && limite && tg){
-    let dhi, base;
-    if(radicaciones===0){ dhi = diasHabilesEntre(hoy(), addDays(restarPlazo(limite, tg), -holg)); base='radicación'; }
-    else                { dhi = diasHabilesEntre(hoy(), addDays(limite, -holg));                 base='límite'; }
-    const nivel = (dhi>=uVerde) ? 'verde' : (dhi>=uAmar ? 'amarillo' : 'rojo');
-    itin = {activa:true, nivel:nivel, dh:dhi, base:base};
+  if(!listo){
+    if(limite && tg){
+      let dhi, base;
+      if(radicaciones===0){ dhi = diasHabilesEntre(hoy(), addDays(restarPlazo(limite, tg), -holg)); base='radicación'; }
+      else                { dhi = diasHabilesEntre(hoy(), addDays(limite, -holg));                 base='límite'; }
+      const nivel = (dhi>=uVerde) ? 'verde' : (dhi>=uAmar ? 'amarillo' : 'rojo');
+      itin = {activa:true, nivel:nivel, dh:dhi, base:base};
+    } else {
+      // Falta la fecha límite (dato obligatorio): no se puede calcular ningún riesgo.
+      // Antes este permiso quedaba SIN anillo y en el mapa se veía igual que uno ya
+      // obtenido. Ahora lleva anillo naranja punteado para que el dato faltante se vea.
+      itin = {activa:true, nivel:'sinfecha', dh:null, base:'sin fecha límite'};
+    }
   }
   p._itinerancia = itin;
 
@@ -585,8 +594,8 @@ function ajustarMapaAlContenedor(){
   else{ document.addEventListener('shown.bs.collapse', sincronizar);
         document.addEventListener('hidden.bs.collapse', sincronizar); }
 }
-const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935'};
-const ITIN_TXT = {verde:'Itinerancia lenta', amarillo:'Itinerancia media', rojo:'Itinerancia rápida'};
+const ITIN_COL = {verde:'#00A651', amarillo:'#F2C200', rojo:'#E53935', sinfecha:'#d56b00'};
+const ITIN_TXT = {verde:'En plazo', amarillo:'Próximo al límite', rojo:'En riesgo', sinfecha:'Falta fecha límite'};
 let LISTA_MAPA = null;   // última lista dibujada, para reescalar al hacer zoom
 /* Factor de escala según el zoom: al ALEJAR (zoom bajo) la geometría se engrosa/agranda
    para no perderse de vista; al acercar, vuelve a su tamaño natural. */
@@ -673,17 +682,23 @@ function dibujarMapa(lista, reencuadrar){
     capa.addLayer(casing);
   });
 
-  // PASADA 2 — Contornos TITILANTES (itinerancia) de TODOS los permisos.
-  // Mismo color, grosor y velocidad de siempre: la itinerancia se ve igual que antes.
+  // PASADA 2 — Anillo de gestión de TODOS los permisos que siguen pendientes.
+  // El COLOR dice en qué estado está (verde en plazo · amarillo próximo al límite ·
+  // rojo en riesgo · naranja punteado si falta la fecha límite) y el MOVIMIENTO queda
+  // reservado al nivel crítico: si todo parpadeara, el parpadeo dejaría de significar
+  // algo y lo verdaderamente urgente se perdería entre lo que va bien.
+  // Los permisos ya obtenidos/activados no llevan anillo: salieron del ciclo.
   visibles.forEach(p=>{
-    if(!(p._itinerancia && p._itinerancia.activa)) return;
-    const colH = ITIN_COL[p._itinerancia.nivel];
-    const cls  = 'pulse-'+p._itinerancia.nivel;
-    let halo;
-    if(p.geomType==='Point') halo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:3,fill:false,className:cls});
-    else if(p.geomType==='Polygon') halo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls});
-    else halo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls});
-    capa.addLayer(halo);
+    const it = p._itinerancia;
+    if(!(it && it.activa)) return;
+    const colH = ITIN_COL[it.nivel] || ITIN_COL.verde;
+    const cls  = (it.nivel==='rojo') ? 'pulse-rojo' : '';
+    const dash = (it.nivel==='sinfecha') ? '10 7' : null;   // punteado = dato faltante, no urgencia
+    let anillo;
+    if(p.geomType==='Point') anillo=L.circleMarker(p.coords[0],{radius:rHaloPt,color:colH,weight:4,fill:false,className:cls,dashArray:dash});
+    else if(p.geomType==='Polygon') anillo=L.polygon(p.coords,{color:colH,weight:wHaloPg,fill:false,className:cls,dashArray:dash});
+    else anillo=L.polyline(p.coords,{color:colH,weight:wHaloLn,opacity:1,className:cls,dashArray:dash});
+    capa.addLayer(anillo);
   });
 
   // PASADA 3 — Geometría de cada permiso, con el color de su tipo de permiso.
@@ -714,12 +729,19 @@ function leyenda(){
   const shapes = `<span><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#6c757d"/></svg> Punto</span>`
     + `<span><svg width="22" height="14"><line x1="1" y1="7" x2="21" y2="7" stroke="#6c757d" stroke-width="4" stroke-linecap="round"/></svg> Línea</span>`
     + `<span><svg width="16" height="14"><rect x="2" y="2" width="12" height="10" rx="1" fill="#6c757d" fill-opacity="0.35" stroke="#6c757d" stroke-width="1.5"/></svg> Polígono</span>`;
-  const itin = `<span><i style="background:#00A651"></i>Lenta</span>`
-    + `<span><i style="background:#F2C200"></i>Media</span>`
-    + `<span><i style="background:#E53935"></i>Rápida</span>`;
+  // Anillo de gestión: un aro de color alrededor de la geometría. El color dice el estado;
+  // solo el crítico se mueve. Se dibuja cada muestra como un aro (no un cuadro relleno)
+  // para que el usuario reconozca en la leyenda la misma forma que ve en el mapa.
+  const aro = (color, extra)=> `<svg width="17" height="15" style="vertical-align:middle">`
+    + `<rect x="2" y="2" width="13" height="11" rx="2" fill="none" stroke="${color}" stroke-width="3" ${extra||''}/></svg>`;
+  const itin = `<span>${aro('#00A651')} En plazo</span>`
+    + `<span>${aro('#F2C200')} Próximo al límite</span>`
+    + `<span>${aro('#E53935')} <b class="pulse-rojo" style="color:#E53935">En riesgo (titila)</b></span>`
+    + `<span>${aro('#d56b00','stroke-dasharray="4 3"')} Falta fecha límite</span>`
+    + `<span><svg width="17" height="15" style="vertical-align:middle"><rect x="3" y="3" width="11" height="9" rx="1" fill="#6c757d" fill-opacity=".35" stroke="#6c757d" stroke-width="1.5"/></svg> Sin aro = obtenido</span>`;
   box.innerHTML = `<div class="mb-1"><b class="mini text-success">Tipo de permiso (color):</b> ${cols}</div>`
     + `<div class="mb-1"><b class="mini text-success">Geometría (forma en el mapa):</b> ${shapes}</div>`
-    + `<div><b class="mini text-success">Itinerancia (contorno titilante · urgencia del trámite):</b> ${itin}</div>`;
+    + `<div><b class="mini text-success">Anillo de gestión (estado del trámite):</b> ${itin}</div>`;
 }
 /* Círculo de color para acompañar el texto del semáforo */
 function dot(clase){
@@ -800,7 +822,10 @@ function nivelToClase(n){ return n==='verde'?'sem-verde':(n==='amarillo'?'sem-am
 */
 function estadoInicio(p){
   if(p._radicaciones>0) return {clase:'sem-verde', txt:'Iniciado'};
-  if(p._itinerancia && p._itinerancia.activa) return {clase:nivelToClase(p._itinerancia.nivel), txt:'Sin iniciar'};
+  // El nivel 'sinfecha' no es un grado de urgencia sino un dato faltante: se excluye aquí
+  // para que la tabla siga mostrando el aviso explícito y no un semáforo engañoso.
+  if(p._itinerancia && p._itinerancia.activa && p._itinerancia.nivel!=='sinfecha')
+    return {clase:nivelToClase(p._itinerancia.nivel), txt:'Sin iniciar'};
   // Sin radicar y sin poder calcular urgencia = falta la fecha límite requerida (dato obligatorio).
   return {clase:'sem-alerta', txt:'⚠ Falta fecha límite'};
 }
