@@ -147,15 +147,16 @@
           </div>
           <div class="row g-1 mb-1">
             <div class="col-7">
-              <label class="req-label">Fecha límite requerida <span class="mini">(del cronograma)</span></label>
-              <input id="fLimite" type="date" class="form-control form-control-sm">
+              <label class="req-label">Fecha límite requerida * <span class="mini">(del cronograma)</span></label>
+              <input id="fLimite" type="date" class="form-control form-control-sm" required aria-required="true">
             </div>
             <div class="col-5">
               <label class="req-label">Holgura (días) <span class="mini">opc.</span></label>
               <input id="fHolgura" type="number" min="0" class="form-control form-control-sm" placeholder="0">
             </div>
           </div>
-          <div class="mini mb-2" style="color:#245c24">Fecha en que el proyecto necesita el permiso <b>activo</b> (Gestión_Acta_Inicio). Alimenta el semáforo de riesgo del dashboard.</div>
+          <div class="mini mb-2" style="color:#245c24">Fecha en que el proyecto necesita el permiso <b>activo</b> (Gestión_Acta_Inicio).
+          <b>Es obligatoria:</b> sin ella el dashboard no puede calcular los semáforos de inicio y obtención, y el permiso queda sin seguimiento de riesgo.</div>
 
           <!-- HISTORIAL DE GESTION -->
           <div class="hist-box mb-2">
@@ -723,6 +724,11 @@ function faltantes(t){
   if(!t.frente) f.push('frente');
   if(!t.pna) f.push('PNA');
   if(!t.geomType) f.push('geometría');
+  // Obligatoria igual que el PNA: sin ella el dashboard no puede calcular los semáforos
+  // de inicio y obtención, y el permiso queda sin seguimiento de riesgo en el mapa.
+  // Se comprueba también aquí (y no solo al guardar) para marcar los permisos que
+  // entran por importación de un KMZ antiguo, que no pasan por el formulario.
+  if(!t.fecha_limite_requerida) f.push('fecha límite');
   const p=permisoDe(t.pna);
   if(p && p.requiere_concesion && !t.concesion) f.push('concesión');
   if(!(t.historial||[]).length) f.push('historial');
