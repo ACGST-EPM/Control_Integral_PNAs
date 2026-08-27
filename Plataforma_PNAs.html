@@ -1084,7 +1084,7 @@ function fila(p){
     <td class="sem ${o.clase}" data-order="${esc(o.txt)}">${dot(o.clase)}${esc(o.txt)}</td>`;})()}
     <td><div class="d-flex gap-1">
       <button class="btn btn-sm epm-btn py-0" title="Ver historial" onclick="verHist('${esc(p.nombre).replace(/'/g,"\\'")}')">🗓️</button>
-      <button class="btn btn-sm py-0" style="background:#b3172d;color:#fff" title="Generar PDF de este permiso" onclick="generarPDFPermiso('${esc(p.nombre).replace(/'/g,"\\'")}')">📄</button>
+      <button class="btn btn-sm py-0" style="background:#5b6f7e;color:#fff;border:none" title="Generar PDF de este permiso" onclick="generarPDFPermiso('${esc(p.nombre).replace(/'/g,"\\'")}')">📄</button>
     </div></td>
   </tr>`;
 }
