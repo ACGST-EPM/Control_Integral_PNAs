@@ -32,8 +32,6 @@
     font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.5; }
   .wrap{ max-width:1080px; margin:0 auto; padding:0 22px 90px; }
   .mono{ font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
-  .eyebrow{ font-family:"IBM Plex Mono",monospace; font-size:.7rem; font-weight:600; letter-spacing:.15em;
-            text-transform:uppercase; color:var(--accent-deep); }
   h1,h2,h3{ text-wrap:balance; }
   code{ font-family:"IBM Plex Mono",monospace; font-size:.85em; background:var(--surface-2);
         border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--accent-deep); }
@@ -43,25 +41,24 @@
   .kicker .dotmark{ width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent); }
   .kicker span{ font-family:"IBM Plex Mono",monospace; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); }
   header.hero h1{ font-size:clamp(1.9rem,4.6vw,2.8rem); font-weight:700; letter-spacing:-.015em; margin:.1em 0 .3em; }
-  header.hero p{ font-size:1.08rem; color:var(--ink-soft); max-width:660px; margin:0; }
+  header.hero p{ font-size:1.1rem; color:var(--ink-soft); max-width:680px; margin:0; }
 
-  .band{ margin:16px 0 8px; }
   h2.band-t{ font-size:1.02rem; font-family:"IBM Plex Mono",monospace; font-weight:600; letter-spacing:.02em;
-             color:var(--ink); display:flex; align-items:center; gap:12px; margin:40px 0 4px; }
+             color:var(--ink); display:flex; align-items:center; gap:12px; margin:44px 0 4px; }
   h2.band-t::before{ content:""; width:22px; height:3px; background:var(--accent); border-radius:2px; flex:none; }
-  .sub{ color:var(--ink-faint); font-size:.92rem; margin:0 0 14px; }
+  .sub{ color:var(--ink-faint); font-size:.92rem; margin:0 0 14px; max-width:720px; }
 
   .grid{ display:grid; gap:14px; }
   .g2{ grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
-  .g3{ grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
-  .g4{ grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+  .g3{ grid-template-columns:repeat(auto-fit,minmax(236px,1fr)); }
+  .g4{ grid-template-columns:repeat(auto-fit,minmax(196px,1fr)); }
 
   .card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); }
-  .card h3{ font-size:.96rem; font-weight:600; margin:0 0 6px; display:flex; align-items:center; gap:8px; }
+  .card h3{ font-size:.98rem; font-weight:600; margin:0 0 6px; display:flex; align-items:center; gap:9px; }
   .card p{ margin:0; font-size:.9rem; color:var(--ink-soft); }
   .card .tagk{ font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase;
                color:var(--accent-deep); font-weight:600; }
-  .kpi-n{ font-size:1.7rem; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  .ic{ font-size:1.15rem; line-height:1; }
 
   .stat{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);
          border-left:4px solid var(--accent); }
@@ -76,12 +73,12 @@
   tbody tr:last-child td{ border-bottom:none; }
   td.mono{ font-family:"IBM Plex Mono",monospace; }
   .num{ font-variant-numeric:tabular-nums; }
-  .swatch{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:6px; border:1px solid rgba(0,0,0,.15); }
 
   .legend{ display:flex; flex-wrap:wrap; gap:10px 14px; }
   .pill{ display:inline-flex; align-items:center; gap:7px; font-size:.85rem; padding:6px 12px; border-radius:999px;
          border:1px solid var(--line-strong); background:var(--surface); box-shadow:var(--shadow); }
-  .pill .dot{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .pill .dot{ width:11px; height:11px; border-radius:50%; flex:none; }
+  .pill .sq{ width:13px; height:11px; border-radius:3px; flex:none; }
   .pill.geo .g{ font-family:"IBM Plex Mono",monospace; color:var(--ink-soft); }
 
   figure{ margin:16px 0; }
@@ -100,25 +97,37 @@
 <header class="hero">
   <div class="kicker"><span class="dotmark"></span><span>Grupo EPM · Resumen ejecutivo</span></div>
   <h1>Plataforma Control Integral PNAs</h1>
-  <p>Una página para leer el estado de todos los permisos geoespaciales de un vistazo. Este resumen reúne lo esencial: las condiciones de los semáforos y el significado de cada convención y espacio del Dashboard y del Generador.</p>
+  <p>Una herramienta visual para <strong>hacer seguimiento a los permisos (PNAs)</strong> de cada proyecto, <strong>anticipar los riesgos</strong> que pueden frenar el proyecto o el contrato, y <strong>generar informes con un clic</strong>. Pensada para que la entienda tanto quien conoce el trámite como quien no.</p>
 </header>
 
-<h2 class="band-t">La idea en una frase</h2>
+<h2 class="band-t">La herramienta en breve</h2>
 <div class="grid g2">
-  <div class="card"><h3><span class="tagk">Qué hace</span></h3><p>Gestiona el ciclo de vida de 5 tipos de permiso ante autoridades externas, ubicándolos en un mapa y coloreándolos por riesgo.</p></div>
-  <div class="card"><h3><span class="tagk">Dos preguntas</span></h3><p>Por cada permiso: <b>¿se inició (radicó) a tiempo?</b> y <b>¿se obtendrá antes de que el proyecto lo necesite?</b> Cada una tiene su semáforo.</p></div>
+  <div class="card"><h3><span class="ic">📄</span> ¿Qué es un PNA?</h3><p>Un <b>Permiso No Ambiental</b>: una autorización que un tercero (un municipio, INVIAS, la ANI o la Gobernación) debe otorgar <b>antes</b> de intervenir una vía o su zona. Si se demora, <b>frena la ejecución del proyecto y del contrato</b>.</p></div>
+  <div class="card"><h3><span class="ic">🎯</span> ¿Qué resuelve?</h3><p>Reúne permisos dispersos en un solo tablero geoespacial y responde, por cada uno, dos preguntas: <b>¿se inició (radicó) a tiempo?</b> y <b>¿se obtendrá antes de que el proyecto lo necesite?</b> — con semáforos que se leen de un vistazo.</p></div>
+</div>
+
+<h2 class="band-t">Eficiencias que aporta</h2>
+<p class="sub">Del dato disperso a la decisión: la plataforma reduce el tiempo de seguimiento y hace visible el riesgo antes de que impacte el cronograma.</p>
+<div class="grid g3">
+  <div class="card"><h3><span class="ic">🗺️</span> Seguimiento centralizado</h3><p>Todos los permisos de todos los proyectos en un mapa único, ubicados donde se ejecutan. Se acabó buscar en correos y archivos sueltos.</p></div>
+  <div class="card"><h3><span class="ic">🚦</span> Alerta temprana de riesgo</h3><p>Semáforos calculados en <b>días hábiles</b> hasta la fecha límite: muestran qué permiso puede impactar el proyecto o el contrato <b>antes</b> de que sea tarde.</p></div>
+  <div class="card"><h3><span class="ic">🧾</span> Trazabilidad completa</h3><p>Cada permiso conserva su historial acumulado (radicados, fechas, observaciones). La evidencia de la gestión viaja con el archivo del proyecto.</p></div>
+  <div class="card"><h3><span class="ic">📊</span> Informes con un clic</h3><p>Un informe PDF profesional con lo que filtres, y una ficha PDF individual por permiso. Listos para comité, auditoría o interventoría.</p></div>
+  <div class="card"><h3><span class="ic">🕑</span> Simulación temporal</h3><p>Mueve la “fecha de análisis” a otro día y observa cómo evolucionará la gestión, sin alterar los datos reales.</p></div>
+  <div class="card"><h3><span class="ic">⚙️</span> Cero infraestructura</h3><p>Funciona en el navegador, sin servidor ni base de datos. Los datos viven en archivos KMZ portables que abren incluso en Google Earth.</p></div>
 </div>
 
 <h2 class="band-t">Los 5 permisos</h2>
+<p class="sub">Todo el sistema gira alrededor de cinco tipos de permiso; cada uno con su autoridad competente y su plazo legal de gestión.</p>
 <div class="tbl-scroll">
   <table>
-    <thead><tr><th>PNA</th><th>Autoridad</th><th>Plazo</th><th>Color</th></tr></thead>
+    <thead><tr><th>PNA</th><th>Autoridad competente</th><th>Plazo de gestión</th><th>Nota</th></tr></thead>
     <tbody>
-      <tr><td class="mono">PMT_Diseño</td><td>Municipio · Sec. Movilidad</td><td class="num">15 días háb.</td><td><span class="swatch" style="background:#2E7D32"></span>Verde bosque</td></tr>
-      <tr><td class="mono">PUZV</td><td>INVIAS</td><td class="num">12 meses</td><td><span class="swatch" style="background:#1565C0"></span>Azul</td></tr>
-      <tr><td class="mono">Cierre_Via</td><td>INVIAS</td><td class="num">3 meses</td><td><span class="swatch" style="background:#00897B"></span>Verde azulado</td></tr>
-      <tr><td class="mono">PUOI-IVCF</td><td>ANI · requiere concesión</td><td class="num">12 meses</td><td><span class="swatch" style="background:#6A1B9A"></span>Morado</td></tr>
-      <tr><td class="mono">PIV</td><td>Gobernación de Antioquia</td><td class="num">12 meses</td><td><span class="swatch" style="background:#C2185B"></span>Magenta</td></tr>
+      <tr><td class="mono">PMT_Diseño</td><td>Municipio · Sec. Movilidad</td><td class="num">15 días hábiles</td><td>Ciclo corto</td></tr>
+      <tr><td class="mono">PUZV</td><td>INVIAS</td><td class="num">12 meses</td><td>Uso de zona de vía</td></tr>
+      <tr><td class="mono">Cierre_Via</td><td>INVIAS</td><td class="num">3 meses</td><td>—</td></tr>
+      <tr><td class="mono">PUOI-IVCF</td><td>ANI</td><td class="num">12 meses</td><td>Requiere concesión vial</td></tr>
+      <tr><td class="mono">PIV</td><td>Gobernación de Antioquia</td><td class="num">12 meses</td><td>Intervención vial</td></tr>
     </tbody>
   </table>
 </div>
@@ -126,7 +135,7 @@
 <h2 class="band-t">Los dos semáforos · condiciones</h2>
 <div class="grid g2">
   <div class="card">
-    <h3><span class="dot" style="width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block"></span> Inicio — ¿radicado a tiempo?</h3>
+    <h3><span class="ic">🟢</span> Inicio — ¿radicado a tiempo?</h3>
     <p style="margin-top:8px">
       <span class="mono" style="color:var(--ok)">●</span> <b>Iniciado</b> — ya se radicó.<br>
       <span class="mono" style="color:var(--warn)">●</span> <b>Sin iniciar</b> — color por urgencia: días hábiles hasta la <b>fecha máxima de radicación</b>.<br>
@@ -134,7 +143,7 @@
     </p>
   </div>
   <div class="card">
-    <h3><span class="dot" style="width:11px;height:11px;border-radius:50%;background:var(--accent);display:inline-block"></span> Obtención — ¿se obtendrá a tiempo?</h3>
+    <h3><span class="ic">🎌</span> Obtención — ¿se obtendrá a tiempo?</h3>
     <p style="margin-top:8px">
       <span class="mono" style="color:var(--ok)">●</span> <b>Obtenido</b> — listo / activado.<br>
       <span class="mono" style="color:var(--risk)">●</span> <b>En trámite</b> — color por días hábiles hasta la <b>fecha límite</b> del proyecto.<br>
@@ -145,16 +154,14 @@
 
 <figure class="fig-scroll">
   <svg viewBox="0 0 820 120" role="img" aria-label="Umbrales del riesgo de obtención: verde, amarillo y rojo según días hábiles al límite, distintos para PMT y para los demás permisos.">
-    <!-- demas -->
-    <text x="20" y="34" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">DEMÁS (meses)</text>
+    <text x="20" y="34" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="currentColor">DEMÁS (meses)</text>
     <rect x="150" y="20" width="200" height="22" fill="var(--risk)" opacity="0.85"/>
     <rect x="350" y="20" width="150" height="22" fill="var(--warn)" opacity="0.9"/>
     <rect x="500" y="20" width="290" height="22" fill="var(--ok)" opacity="0.85"/>
     <text x="250" y="36" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">&lt; 30</text>
     <text x="425" y="36" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">30–45</text>
     <text x="645" y="36" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">≥ 45 días háb.</text>
-    <!-- pmt -->
-    <text x="20" y="86" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="var(--ink)">PMT_DISEÑO</text>
+    <text x="20" y="86" font-family="IBM Plex Mono" font-size="11" font-weight="600" fill="currentColor">PMT_DISEÑO</text>
     <rect x="150" y="72" width="200" height="22" fill="var(--risk)" opacity="0.85"/>
     <rect x="350" y="72" width="150" height="22" fill="var(--warn)" opacity="0.9"/>
     <rect x="500" y="72" width="290" height="22" fill="var(--ok)" opacity="0.85"/>
@@ -162,71 +169,100 @@
     <text x="425" y="88" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">20–30</text>
     <text x="645" y="88" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="#fff">≥ 30 días háb.</text>
   </svg>
-  <figcaption><b>Umbrales del riesgo</b> = días hábiles hasta la fecha límite (menos holgura). Rojo incluye vencido. “Listo / Activado”: PMT solo con <code>Aprobado</code>; los demás al 100% de avance.</figcaption>
+  <figcaption><b>Umbrales del riesgo</b> = días hábiles hasta la fecha límite (menos la holgura). Rojo incluye vencido. “Listo / Activado”: PMT solo con <code>Aprobado</code>; los demás al 100 % de avance.</figcaption>
 </figure>
 
-<h2 class="band-t">Convenciones · significado de cada color y forma</h2>
-<p class="sub">El color del <b>permiso</b> (identidad) es distinto de los colores de <b>riesgo</b> (alerta) para no confundirlos.</p>
+<h2 class="band-t">El mapa: una sola lectura a la vez</h2>
+<p class="sub">Para evitar confusiones, el mapa pinta <b>una sola dimensión de color a la vez</b>, con el conmutador <b>“Colorear el mapa por”</b>. El tipo de permiso (PNA) aparece como <b>etiqueta</b> sobre cada geometría al acercar el zoom; y las geometrías <b>crecen</b> al alejar para no perderse de vista.</p>
 <div class="grid g2">
   <div class="card">
-    <h3>Semáforos y alerta de dato</h3>
+    <h3><span class="ic">🚦</span> Vista “Riesgo” <span class="tagk" style="margin-left:auto">por defecto</span></h3>
     <div class="legend" style="margin-top:10px">
-      <span class="pill"><span class="dot" style="background:var(--ok)"></span>Verde · en plazo / ok</span>
-      <span class="pill"><span class="dot" style="background:var(--warn)"></span>Amarillo · por vencer</span>
-      <span class="pill"><span class="dot" style="background:var(--risk)"></span>Rojo · en riesgo / vencido</span>
-      <span class="pill"><span class="dot" style="background:var(--alert)"></span>⚠ Naranja · falta fecha límite</span>
+      <span class="pill"><span class="sq" style="background:#0ca30c"></span>En plazo</span>
+      <span class="pill"><span class="sq" style="background:#eda100"></span>Próximo al límite</span>
+      <span class="pill"><span class="sq" style="background:#d03b3b"></span>En riesgo / vencido <span class="mono" style="font-size:.7rem;color:var(--ink-faint)">titila</span></span>
+      <span class="pill"><span class="sq" style="background:#4a3aa7"></span>Falta fecha límite</span>
+      <span class="pill"><span class="sq" style="background:#8a978f"></span>Obtenido / activado</span>
     </div>
+    <p style="margin-top:10px">Solo el nivel <b>crítico (rojo)</b> parpadea: el movimiento se reserva para lo que exige atención inmediata.</p>
   </div>
   <div class="card">
-    <h3>Geometría e itinerancia (mapa)</h3>
+    <h3><span class="ic">🏛️</span> Vista “Autoridad”</h3>
     <div class="legend" style="margin-top:10px">
+      <span class="pill"><span class="sq" style="background:#2a78d6"></span>Municipio</span>
+      <span class="pill"><span class="sq" style="background:#eb6834"></span>INVIAS</span>
+      <span class="pill"><span class="sq" style="background:#1baf7a"></span>ANI</span>
+      <span class="pill"><span class="sq" style="background:#4a3aa7"></span>Gobernación</span>
+    </div>
+    <p style="margin-top:10px">Útil para ver ante <b>quién</b> está cada trámite. La leyenda inferior siempre describe la dimensión activa.</p>
+    <div class="legend" style="margin-top:12px">
       <span class="pill geo"><span class="g">●</span> Punto</span>
       <span class="pill geo"><span class="g">—</span> Línea</span>
       <span class="pill geo"><span class="g">▭</span> Polígono</span>
-      <span class="pill"><span class="dot" style="background:#00A651"></span>Pulso lento</span>
-      <span class="pill"><span class="dot" style="background:#F2C200"></span>medio</span>
-      <span class="pill"><span class="dot" style="background:#E53935"></span>rápido</span>
     </div>
-    <p style="margin-top:10px">El pulso (itinerancia) titila mientras el permiso no esté obtenido; más rápido = más urgente. Al alejar el zoom, la geometría crece para seguir visible.</p>
   </div>
 </div>
 
 <h2 class="band-t">Dashboard · qué significa cada espacio</h2>
-<p class="sub">De lo general a lo particular. Los 9 filtros (incluido el recorrido temporal) afectan a todo el tablero a la vez.</p>
+<p class="sub">De lo general a lo particular. Los 9 filtros afectan a todo el tablero a la vez; el recorrido temporal se activa aparte, en modo simulación.</p>
 <div class="grid g4" style="margin-bottom:14px">
   <div class="stat"><div class="k">KPI</div><div class="v">Permisos</div><div class="d">Total según filtros.</div></div>
-  <div class="stat" style="border-left-color:#008c6b"><div class="k">KPI</div><div class="v">Activados / Obtenidos</div><div class="d">Permiso conseguido (listo).</div></div>
-  <div class="stat" style="border-left-color:var(--info)"><div class="k">KPI</div><div class="v">En gestión</div><div class="d">Radicó pero aún &lt; 100%.</div></div>
-  <div class="stat" style="border-left-color:var(--risk)"><div class="k">KPI</div><div class="v">En riesgo</div><div class="d">Dividido: Permisos | Proyectos.</div></div>
+  <div class="stat" style="border-left-color:#0ca30c"><div class="k">KPI</div><div class="v">Activados / Obtenidos</div><div class="d">Permiso conseguido.</div></div>
+  <div class="stat" style="border-left-color:#5b6f7e"><div class="k">KPI</div><div class="v">En gestión</div><div class="d">Radicó pero aún &lt; 100 %.</div></div>
+  <div class="stat" style="border-left-color:#d03b3b"><div class="k">KPI</div><div class="v">En riesgo</div><div class="d">Dividido: Permisos | Proyectos.</div></div>
 </div>
 <div class="grid g3">
-  <div class="card"><h3><span class="tagk">Gráfico</span></h3><p><b>Avance del trámite</b> — barras horizontales agrupadas Negocio › Proyecto › Permisos.</p></div>
+  <div class="card"><h3><span class="tagk">Gráfico</span></h3><p><b>Avance del trámite</b> — barras agrupadas Negocio › Proyecto › Permisos.</p></div>
   <div class="card"><h3><span class="tagk">Gráfico</span></h3><p><b>Permisos por Proyecto</b> — cada permiso con sus dos semáforos (Inicio / Obtención).</p></div>
   <div class="card"><h3><span class="tagk">Gráfico</span></h3><p><b>Por Negocio</b> y <b>por Autoridad</b> — distribución sobre las 4 categorías fijas.</p></div>
-  <div class="card"><h3><span class="tagk">Mapa</span></h3><p>Geometría de cada permiso en su color + itinerancia. El <b>popup</b> muestra proyecto, frente, PNA, municipio, autoridad, estado, % y el semáforo de su etapa.</p></div>
-  <div class="card"><h3><span class="tagk">Filtros + recorrido</span></h3><p>9 filtros y el <b>recorrido temporal</b>: mueve la fecha de análisis y recalcula semáforos e itinerancia; oculta lo que aún no había iniciado.</p></div>
-  <div class="card"><h3><span class="tagk">Tabla</span></h3><p><b>Información_Trámites_PNA</b> — todos los campos, con Inicio / Obtención iguales al panel superior. Exporta a Excel.</p></div>
+  <div class="card"><h3><span class="tagk">Mapa</span></h3><p>Conmutador <b>Riesgo / Autoridad</b>. El popup de cada permiso muestra proyecto, frente, PNA, municipio, autoridad, estado, % y el semáforo de su etapa.</p></div>
+  <div class="card"><h3><span class="tagk">Filtros + recorrido</span></h3><p>9 filtros y el <b>recorrido temporal (modo simulación)</b>: mueve la fecha de análisis y recalcula todo como si fuera ese día; muestra un aviso mientras está activo.</p></div>
+  <div class="card"><h3><span class="tagk">Tabla</span></h3><p><b>Información de trámites (PNAs)</b> — todos los campos, con Inicio / Obtención y una columna <b>Resumen</b> con acciones por permiso.</p></div>
 </div>
 
-<h2 class="band-t">Generador KMZ · qué se hace en cada bloque</h2>
+<h2 class="band-t">Generación de informes</h2>
+<p class="sub">La herramienta convierte lo que ves en documentos listos para presentar. Se generan con “Guardar como PDF” del navegador (activa <em>Gráficos de fondo</em> para conservar los colores).</p>
+<div class="grid g2">
+  <div class="card">
+    <h3><span class="ic">📄</span> Informe general (botón del tablero)</h3>
+    <p style="margin-top:6px">Toma <b>lo que hayas filtrado</b> y arma un informe profesional y segmentado:</p>
+    <ul style="margin:8px 0 0; padding-left:18px; font-size:.9rem; color:var(--ink-soft); line-height:1.7">
+      <li>Encabezado, fecha de emisión y filtros aplicados.</li>
+      <li><b>Resumen ejecutivo</b> (KPIs + avance promedio).</li>
+      <li><b>Distribución</b> por Negocio, Autoridad, Tipo y riesgo de inicio/obtención.</li>
+      <li><b>Resumen por proyecto</b> y <b>detalle</b> de cada permiso.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3><span class="ic">🗂️</span> Ficha por permiso (columna Resumen)</h3>
+    <p style="margin-top:6px">Botón <b>📄</b> en cada fila. Genera una ficha individual con:</p>
+    <ul style="margin:8px 0 0; padding-left:18px; font-size:.9rem; color:var(--ink-soft); line-height:1.7">
+      <li>Identificación (proyecto, código banco, negocio, frente, autoridad, municipio, fecha límite).</li>
+      <li>Estado, % de avance y semáforos de inicio y obtención.</li>
+      <li><b>Historial completo</b> del trámite en línea de tiempo.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 class="band-t">Generador KMZ · cómo se alimenta</h2>
 <p class="sub">Herramienta de captura. Un KMZ por proyecto (<code>CódigoBanco_Proyecto.kmz</code>); el historial se acumula dentro del mismo permiso.</p>
 <div class="grid g4">
-  <div class="stat"><div class="k">Bloque 1</div><div class="v">Base de proyectos</div><div class="d">Con clave de admin. Datos de identidad una sola vez: Código Banco, Proyecto, Negocio, Estado, Fase, Municipio, Contrato.</div></div>
-  <div class="stat"><div class="k">Bloque 2</div><div class="v">Datos del permiso</div><div class="d">Proyecto, PNA, Frente, <b>Fecha límite (obligatoria)</b> y holgura. Autoridad y plazo se deducen. Nombre: <span class="mono">PNA_CódigoBanco_Frente</span>.</div></div>
+  <div class="stat"><div class="k">Bloque 1</div><div class="v">Base de proyectos</div><div class="d">Con clave de admin. Identidad una vez: Código Banco, Proyecto, Negocio, Estado, Fase, Municipio, Contrato.</div></div>
+  <div class="stat"><div class="k">Bloque 2</div><div class="v">Datos del permiso</div><div class="d">PNA, Frente y <b>Fecha límite (obligatoria)</b>. Autoridad y plazo se deducen del catálogo.</div></div>
   <div class="stat"><div class="k">Bloque 3</div><div class="v">Geometría</div><div class="d">Dibuja o importa el punto, línea o polígono del permiso.</div></div>
-  <div class="stat"><div class="k">Bloque 4</div><div class="v">Historial</div><div class="d">Agrega el estado actual (radicado, fechas, observación). Actualizar = importar, añadir fila, exportar.</div></div>
+  <div class="stat"><div class="k">Bloque 4</div><div class="v">Historial + publicar</div><div class="d">Agrega el estado actual y publica el KMZ al repositorio (Commit + Push) con un clic.</div></div>
 </div>
 
 <h2 class="band-t">Reglas de oro</h2>
 <div class="grid g2">
-  <div class="rule">El <b>catálogo</b> <span class="mono">tipos_permiso.json</span> es la única fuente de verdad. Cambios de reglas se hacen ahí, no en los programas.</div>
-  <div class="rule">El Dashboard lee la carpeta <b>de GitHub</b>. Guardar el KMZ en local no basta: hay que hacer <b>commit + push</b>.</div>
+  <div class="rule">El <b>catálogo</b> <span class="mono">tipos_permiso.json</span> es la única fuente de verdad. Los cambios de reglas se hacen ahí, no en los programas.</div>
+  <div class="rule">El Dashboard lee los KMZ <b>del repositorio</b>. Guardar el KMZ en local no basta: hay que publicarlo (Commit + Push).</div>
   <div class="rule">La <b>Fecha límite requerida</b> es obligatoria: sin ella no hay semáforos (aparece ⚠ falta fecha límite).</div>
-  <div class="rule">El <b>historial se acumula</b> en una sola geometría por permiso; no se crean geometrías por cada estado.</div>
+  <div class="rule">El <b>recorrido temporal</b> es una simulación: cambia la vista, nunca los datos reales del proyecto.</div>
 </div>
 
 <footer>
-  <p><strong>Plataforma Control Integral PNAs</strong> · Grupo EPM · Centro de Gestión Servicios Técnicos · Resumen ejecutivo v1.0.<br>
+  <p><strong>Plataforma Control Integral PNAs</strong> · Grupo EPM · Centro de Gestión Servicios Técnicos · Resumen ejecutivo v2.0.<br>
   Para el detalle paso a paso y las ilustraciones ampliadas, ver la <em>Guía de Implementación PNAs</em>.</p>
 </footer>
 
